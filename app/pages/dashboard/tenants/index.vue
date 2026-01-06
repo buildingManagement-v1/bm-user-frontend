@@ -17,8 +17,8 @@ const loadingBuildings = ref(false)
 const loadingLeases = ref(false)
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
-const isDetailModalOpen = ref(false)
 const isLeaseModalOpen = ref(false)
+const isLeaseFormModalOpen = ref(false)
 const isCalendarModalOpen = ref(false)
 const selectedTenant = ref<Tenant | null>(null)
 const selectedLease = ref<Lease | null>(null)
@@ -107,24 +107,6 @@ function openEditModal(tenant: Tenant) {
   isEditModalOpen.value = true
 }
 
-function openDetailModal(tenant: Tenant) {
-  selectedTenant.value = tenant
-  fetchTenantLeases(tenant.id)
-  isDetailModalOpen.value = true
-}
-
-function openCreateLeaseModal() {
-  leaseMode.value = 'create'
-  selectedLease.value = null
-  isLeaseModalOpen.value = true
-}
-
-function openEditLeaseModal(lease: Lease) {
-  leaseMode.value = 'edit'
-  selectedLease.value = lease
-  isLeaseModalOpen.value = true
-}
-
 function openLeaseModal(tenant: Tenant) {
   selectedTenant.value = tenant
   fetchTenantLeases(tenant.id)
@@ -134,6 +116,18 @@ function openLeaseModal(tenant: Tenant) {
 function openCalendarModal(tenant: Tenant) {
   selectedTenant.value = tenant
   isCalendarModalOpen.value = true
+}
+
+function openCreateLeaseModal() {
+  leaseMode.value = 'create'
+  selectedLease.value = null
+  isLeaseFormModalOpen.value = true
+}
+
+function openEditLeaseModal(lease: Lease) {
+  leaseMode.value = 'edit'
+  selectedLease.value = lease
+  isLeaseFormModalOpen.value = true
 }
 
 async function deleteTenant(id: string) {
@@ -172,7 +166,7 @@ function handleSuccess() {
 }
 
 function handleLeaseSuccess() {
-  isLeaseModalOpen.value = false
+  isLeaseFormModalOpen.value = false
   selectedLease.value = null
   if (selectedTenant.value) {
     fetchTenantLeases(selectedTenant.value.id)
@@ -246,9 +240,7 @@ onMounted(() => {
             <UDropdownMenu :items="[
               [{ label: 'Edit', icon: 'i-heroicons-pencil', onSelect: () => openEditModal(row.original) }],
               [{ label: 'Delete', icon: 'i-heroicons-trash', onSelect: () => deleteTenant(row.original.id) }]
-            ]" :content="{
-              align: 'end'
-            }">
+            ]" :content="{ align: 'end' }">
               <UButton size="xs" color="neutral" variant="outline" icon="i-heroicons-ellipsis-vertical" />
             </UDropdownMenu>
           </div>
@@ -270,7 +262,7 @@ onMounted(() => {
       </UTable>
     </UCard>
 
-    <!-- Create/Edit Tenant Modals -->
+    <!-- Create Tenant Modal -->
     <UModal v-model:open="isCreateModalOpen" title="Add New Tenant">
       <template #body>
         <TenantForm v-if="selectedBuildingId" mode="create" :building-id="selectedBuildingId" @success="handleSuccess"
@@ -278,6 +270,7 @@ onMounted(() => {
       </template>
     </UModal>
 
+    <!-- Edit Tenant Modal -->
     <UModal v-model:open="isEditModalOpen" title="Edit Tenant">
       <template #body>
         <TenantForm v-if="selectedTenant && selectedBuildingId" mode="edit" :building-id="selectedBuildingId"
@@ -285,87 +278,79 @@ onMounted(() => {
       </template>
     </UModal>
 
-    <!-- Tenant Detail Modal with Leases -->
-    <UModal v-model:open="isDetailModalOpen" :title="`${selectedTenant?.name}`" :ui="{ content: 'max-w-7xl' }">
+    <!-- Lease Table Modal -->
+    <UModal v-model:open="isLeaseModalOpen" :title="`${selectedTenant?.name} - Leases`" :ui="{ content: 'max-w-7xl' }">
       <template #body>
-        <div v-if="selectedTenant">
-          <UTabs :items="[{ label: 'Leases', value: 'leases' }, { label: 'Payment Calendar', value: 'calendar' }]">
-            <template #default="{ item }">
-              <div v-if="item.value === 'leases'" class="space-y-4">
-                <div class="flex items-center justify-between">
-                  <h3 class="text-lg font-medium">Lease Agreements</h3>
-                  <UButton size="sm" color="primary" @click="openCreateLeaseModal">
-                    Add Lease
-                  </UButton>
-                </div>
+        <div v-if="selectedTenant" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium">Lease Agreements</h3>
+            <UButton size="sm" color="primary" @click="openCreateLeaseModal">
+              Add Lease
+            </UButton>
+          </div>
 
-                <UTable :data="tenantLeases" :columns="leaseColumns" :loading="loadingLeases">
-                  <template #unit-cell="{ row }">
-                    <span>{{ row.original.unit.unitNumber }}</span>
-                    <span v-if="row.original.unit.floor" class="text-gray-500">
-                      (Floor {{ row.original.unit.floor }})
-                    </span>
-                  </template>
+          <UTable :data="tenantLeases" :columns="leaseColumns" :loading="loadingLeases">
+            <template #unit-cell="{ row }">
+              <span>{{ row.original.unit.unitNumber }}</span>
+              <span v-if="row.original.unit.floor" class="text-gray-500">
+                (Floor {{ row.original.unit.floor }})
+              </span>
+            </template>
 
-                  <template #rentAmount-cell="{ row }">
-                    <span>${{ row.original.rentAmount.toLocaleString() }}</span>
-                  </template>
+            <template #rentAmount-cell="{ row }">
+              <span>${{ row.original.rentAmount.toLocaleString() }}</span>
+            </template>
 
-                  <template #startDate-cell="{ row }">
-                    <span>{{ formatDate(row.original.startDate) }}</span>
-                  </template>
+            <template #startDate-cell="{ row }">
+              <span>{{ formatDate(row.original.startDate) }}</span>
+            </template>
 
-                  <template #endDate-cell="{ row }">
-                    <span>{{ formatDate(row.original.endDate) }}</span>
-                  </template>
+            <template #endDate-cell="{ row }">
+              <span>{{ formatDate(row.original.endDate) }}</span>
+            </template>
 
-                  <template #status-cell="{ row }">
-                    <UBadge
-                      :color="row.original.status === 'active' ? 'success' : row.original.status === 'expired' ? 'warning' : 'neutral'"
-                      variant="subtle" class="capitalize">
-                      {{ row.original.status }}
-                    </UBadge>
-                  </template>
+            <template #status-cell="{ row }">
+              <UBadge
+                :color="row.original.status === 'active' ? 'success' : row.original.status === 'expired' ? 'warning' : 'neutral'"
+                variant="subtle" class="capitalize">
+                {{ row.original.status }}
+              </UBadge>
+            </template>
 
-                  <template #actions-cell="{ row }">
-                    <div class="flex gap-2">
-                      <UButton size="xs" color="neutral" variant="ghost" @click="openEditLeaseModal(row.original)">
-                        Edit
-                      </UButton>
-                      <UButton size="xs" color="error" variant="ghost" @click="deleteLease(row.original.id)">
-                        Delete
-                      </UButton>
-                    </div>
-                  </template>
-
-                  <template #empty>
-                    <div class="text-center py-8">
-                      <p class="text-gray-500 mb-4">No leases yet</p>
-                      <UButton color="primary" size="sm" @click="openCreateLeaseModal">
-                        Add First Lease
-                      </UButton>
-                    </div>
-                  </template>
-                </UTable>
-              </div>
-
-              <div v-else-if="item.value === 'calendar'" class="py-4">
-                <PaymentCalendar :building-id="selectedBuildingId" :tenant-id="selectedTenant.id" />
+            <template #actions-cell="{ row }">
+              <div class="flex gap-2">
+                <UButton size="xs" color="neutral" variant="ghost" @click="openEditLeaseModal(row.original)">
+                  Edit
+                </UButton>
+                <UButton size="xs" color="error" variant="ghost" @click="deleteLease(row.original.id)">
+                  Delete
+                </UButton>
               </div>
             </template>
-          </UTabs>
+
+            <template #empty>
+              <div class="text-center py-8">
+                <p class="text-gray-500 mb-4">No leases yet</p>
+                <UButton color="primary" size="sm" @click="openCreateLeaseModal">
+                  Add First Lease
+                </UButton>
+              </div>
+            </template>
+          </UTable>
         </div>
       </template>
     </UModal>
 
-    <UModal v-model:open="isLeaseModalOpen" :title="`${selectedTenant?.name} - Leases`" size="2xl">
+    <!-- Lease Form Modal -->
+    <UModal v-model:open="isLeaseFormModalOpen" :title="leaseMode === 'create' ? 'Create Lease' : 'Edit Lease'">
       <template #body>
         <LeaseForm v-if="selectedTenant && selectedBuildingId" :mode="leaseMode" :building-id="selectedBuildingId"
           :tenant-id="selectedTenant.id" :lease="selectedLease || undefined" @success="handleLeaseSuccess"
-          @cancel="isLeaseModalOpen = false" />
+          @cancel="isLeaseFormModalOpen = false" />
       </template>
     </UModal>
 
+    <!-- Payment Calendar Modal -->
     <UModal v-model:open="isCalendarModalOpen" :title="`${selectedTenant?.name} - Payment Calendar`" size="xl">
       <template #body>
         <PaymentCalendar v-if="selectedTenant" :building-id="selectedBuildingId" :tenant-id="selectedTenant.id" />
