@@ -66,6 +66,12 @@ const allNavigation: NavItem[] = [
     to: '/dashboard/managers',
     ownerOnly: true
   },
+  {
+    label: 'Activities',
+    icon: 'i-heroicons-user-group',
+    to: '/dashboard/activity-logs',
+    managerRoles: [ManagerRole.OPERATIONS_MANAGER]
+  },
 ]
 
 const navigation = computed(() => {

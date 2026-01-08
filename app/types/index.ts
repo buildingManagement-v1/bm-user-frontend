@@ -6,3 +6,4 @@ export * from "./unit";
 export * from "./tenant";
 export * from "./report";
 export * from "./dashboard";
+export * from "./activity-log";

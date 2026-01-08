@@ -1,6 +1,6 @@
 export const useApi = () => {
   const config = useRuntimeConfig();
-  const { token, refresh } = useAuth();
+  const { token, refresh, logout } = useAuth();
 
   const api = async <T = any>(url: string, options: any = {}) => {
     try {
@@ -20,9 +20,8 @@ export const useApi = () => {
           return await api<T>(url, { ...options, _isRetry: true });
         } catch (refreshError) {
           // Refresh failed, throw original error
-          const message =
-            error.data?.message || error.message || "Request failed";
-          throw new Error(message);
+          logout();
+          throw new Error("Session expired. Please login again.");
         }
       }
 

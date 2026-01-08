@@ -21,7 +21,7 @@ const userMenuItems = [
 </script>
 
 <template>
-  <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+  <header class="sticky top-0 z-50 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
     <div class="flex items-center gap-4">
       <h2 class="text-lg font-semibold text-gray-900">Building Management System</h2>
     </div>
