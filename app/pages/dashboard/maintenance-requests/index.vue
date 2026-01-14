@@ -12,11 +12,12 @@ const buildings = ref<Building[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
 const loadingBuildings = ref(false)
+const deletingId = ref<string | null>(null)
 const isCreateModalOpen = ref(false)
 const isViewModalOpen = ref(false)
+const isUpdateModalOpen = ref(false)
 const selectedRequest = ref<MaintenanceRequest | null>(null)
 
-// Get user role from auth - adjust based on your auth implementation
 const userRole = ref<string>('')
 
 const columns: TableColumn<MaintenanceRequest>[] = [
@@ -77,6 +78,32 @@ function openViewModal(request: MaintenanceRequest) {
   isViewModalOpen.value = true
 }
 
+function openUpdateModal(request: MaintenanceRequest) {
+  selectedRequest.value = request
+  isUpdateModalOpen.value = true
+}
+
+async function deleteRequest(id: string) {
+  if (!selectedBuildingId.value) return
+
+  if (!confirm('Are you sure you want to delete this maintenance request?')) return
+
+  deletingId.value = id
+  try {
+    await buildingApi(
+      selectedBuildingId.value,
+      `/v1/app/maintenance-requests/${id}`,
+      { method: 'DELETE' }
+    )
+    toast.add({ title: 'Request deleted successfully', color: 'success' })
+    fetchRequests()
+  } catch (error: any) {
+    toast.add({ title: 'Failed to delete request', description: error.message, color: 'error' })
+  } finally {
+    deletingId.value = null
+  }
+}
+
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString()
 }
@@ -84,6 +111,7 @@ function formatDate(dateString: string) {
 function handleSuccess() {
   isCreateModalOpen.value = false
   isViewModalOpen.value = false
+  isUpdateModalOpen.value = false
   selectedRequest.value = null
   fetchRequests()
 }
@@ -154,9 +182,18 @@ onMounted(() => {
         </template>
 
         <template #actions-cell="{ row }">
-          <UButton size="xs" color="neutral" variant="ghost" @click="openViewModal(row.original)">
-            View
-          </UButton>
+          <div class="flex items-center gap-2">
+            <UButton size="xs" color="neutral" variant="ghost" @click="openViewModal(row.original)">
+              View
+            </UButton>
+            <UButton size="xs" color="primary" variant="ghost" @click="openUpdateModal(row.original)">
+              Update
+            </UButton>
+            <UButton size="xs" color="error" variant="ghost" @click="deleteRequest(row.original.id)"
+              :loading="deletingId === row.original.id" :disabled="deletingId !== null">
+              Delete
+            </UButton>
+          </div>
         </template>
 
         <template #empty>
@@ -232,6 +269,13 @@ onMounted(() => {
             </UButton>
           </div>
         </div>
+      </template>
+    </UModal>
+
+    <UModal v-model:open="isUpdateModalOpen" title="Update Maintenance Request">
+      <template #body>
+        <MaintenanceRequestUpdateForm v-if="selectedRequest && selectedBuildingId" :request="selectedRequest"
+          :building-id="selectedBuildingId" @success="handleSuccess" @cancel="isUpdateModalOpen = false" />
       </template>
     </UModal>
   </div>

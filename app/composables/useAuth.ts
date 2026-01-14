@@ -1,8 +1,8 @@
 import type {
   User,
   Manager,
+  TenantAuthData,
   LoginResponse,
-  Tenant,
   ApiResponse,
 } from "~/types";
 
@@ -12,11 +12,11 @@ export const useAuth = () => {
   const config = useRuntimeConfig();
   const router = useRouter();
 
-  const userCookie = useCookie<User | Manager | Tenant | null>("user", {
+  const userCookie = useCookie<User | Manager | TenantAuthData | null>("user", {
     maxAge: 60 * 60 * 24 * 7,
   });
 
-  const user = useState<User | Manager | Tenant | null>(
+  const user = useState<User | Manager | TenantAuthData | null>(
     "user",
     () => userCookie.value
   );
@@ -56,7 +56,7 @@ export const useAuth = () => {
       token.value = response.data.accessToken;
       refreshToken.value = response.data.refreshToken;
 
-      let userData: User | Manager | Tenant;
+      let userData: User | Manager | TenantAuthData;
       if (type === "user") {
         userData = response.data.user!;
       } else if (type === "manager") {

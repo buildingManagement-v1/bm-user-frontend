@@ -8,7 +8,7 @@ export interface User {
   status: "active" | "inactive";
 }
 
-export interface Tenant {
+export interface TenantAuthData {
   id: string;
   name: string;
   email: string;
@@ -24,13 +24,13 @@ export interface Tenant {
   } | null;
 }
 
-export type AuthUser = User | Manager | Tenant;
+export type AuthUser = User | Manager | TenantAuthData;
 
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
   user?: User;
   manager?: Manager;
-  tenant?: Tenant;
+  tenant?: TenantAuthData;
   mustResetPassword?: boolean;
 }

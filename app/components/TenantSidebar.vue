@@ -13,6 +13,7 @@ const navigation = [
   { label: 'Dashboard', icon: 'i-heroicons-home', to: '/tenant/dashboard' },
   { label: 'Maintenance', icon: 'i-heroicons-wrench-screwdriver', to: '/tenant/maintenance' },
   { label: 'Payment History', icon: 'i-heroicons-banknotes', to: '/tenant/payments' },
+  { label: 'Notifications', icon: 'i-heroicons-bell', to: '/tenant/notifications' },
 ]
 
 function isActive(itemTo: string) {

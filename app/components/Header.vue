@@ -27,6 +27,7 @@ const userMenuItems = [
     </div>
 
     <div class="flex items-center gap-4">
+      <NotificationBell />
       <UDropdownMenu :items="userMenuItems" :popper="{ placement: 'bottom-end' }">
         <UButton color="neutral" variant="ghost" trailing-icon="i-heroicons-chevron-down">
           <div class="flex items-center gap-2">

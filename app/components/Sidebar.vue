@@ -72,6 +72,12 @@ const allNavigation: NavItem[] = [
     to: '/dashboard/activity-logs',
     managerRoles: [ManagerRole.OPERATIONS_MANAGER]
   },
+  {
+    label: 'Notifications',
+    icon: 'i-heroicons-bell',
+    to: '/dashboard/notifications',
+    managerRoles: [ManagerRole.OPERATIONS_MANAGER]
+  },
 ]
 
 const navigation = computed(() => {
