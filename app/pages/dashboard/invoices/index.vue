@@ -68,6 +68,31 @@ async function fetchInvoices() {
   }
 }
 
+async function downloadInvoice(invoiceId: string) {
+  if (!selectedBuildingId.value) return
+
+  try {
+    const response = await buildingApi(
+      selectedBuildingId.value,
+      `/v1/app/invoices/${invoiceId}/download`,
+      { responseType: 'blob' }
+    )
+
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `invoice-${invoiceId}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.add({ title: 'Invoice downloaded', color: 'success' })
+  } catch (error: any) {
+    toast.add({ title: 'Failed to download invoice', description: error.message, color: 'error' })
+  }
+}
+
 function openDetailModal(invoice: Invoice) {
   selectedInvoice.value = invoice
   isDetailModalOpen.value = true
@@ -139,9 +164,14 @@ onMounted(() => {
         </template>
 
         <template #actions-cell="{ row }">
-          <UButton size="xs" color="neutral" variant="ghost" @click="openDetailModal(row.original)">
-            View
-          </UButton>
+          <div class="flex items-center gap-2">
+            <UButton size="xs" color="neutral" variant="ghost" @click="openDetailModal(row.original)">
+              View
+            </UButton>
+            <UButton size="xs" color="primary" variant="ghost" @click="downloadInvoice(row.original.id)">
+              <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
+            </UButton>
+          </div>
         </template>
 
         <template #empty>
@@ -223,9 +253,13 @@ onMounted(() => {
             <p class="text-sm">{{ selectedInvoice.notes }}</p>
           </div>
 
-          <div class="flex justify-end">
+          <div class="flex justify-end gap-3">
             <UButton color="neutral" variant="ghost" @click="isDetailModalOpen = false">
               Close
+            </UButton>
+            <UButton color="primary" @click="downloadInvoice(selectedInvoice!.id)">
+              <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4 mr-2" />
+              Download PDF
             </UButton>
           </div>
         </div>

@@ -76,6 +76,31 @@ function handleSuccess() {
   fetchPayments()
 }
 
+async function downloadReceipt(invoiceId: string) {
+  if (!selectedBuildingId.value) return
+
+  try {
+    const response = await buildingApi(
+      selectedBuildingId.value,
+      `/v1/app/invoices/${invoiceId}/download`,
+      { responseType: 'blob' }
+    )
+
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `receipt-${invoiceId}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.add({ title: 'Receipt downloaded', color: 'success' })
+  } catch (error: any) {
+    toast.add({ title: 'Failed to download receipt', description: error.message, color: 'error' })
+  }
+}
+
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
     fetchPayments()
@@ -146,9 +171,12 @@ onMounted(() => {
         </template>
 
         <template #invoice-cell="{ row }">
-          <span v-if="row.original.invoice" class="text-primary-600 hover:underline cursor-pointer">
-            {{ row.original.invoice.invoiceNumber }}
-          </span>
+          <div v-if="row.original.invoice" class="flex items-center gap-2">
+            <span class="text-primary-600">{{ row.original.invoice.invoiceNumber }}</span>
+            <UButton size="xs" color="primary" variant="ghost" @click="downloadReceipt(row.original.invoice.id)">
+              <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
+            </UButton>
+          </div>
           <span v-else class="text-gray-400">-</span>
         </template>
 

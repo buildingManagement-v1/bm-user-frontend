@@ -19,6 +19,7 @@ const columns: TableColumn<Payment>[] = [
   { accessorKey: 'amount', header: 'Amount' },
   { accessorKey: 'status', header: 'Status' },
   { accessorKey: 'notes', header: 'Notes' },
+  { id: 'actions', header: 'Receipt' },
 ]
 
 async function fetchPayments() {
@@ -30,6 +31,28 @@ async function fetchPayments() {
     toast.add({ title: 'Failed to fetch payments', description: error.message, color: 'error' })
   } finally {
     loading.value = false
+  }
+}
+
+async function downloadReceipt(invoiceId: string) {
+  try {
+    const response = await api(
+      `/v1/tenant/invoices/${invoiceId}/download`,
+      { responseType: 'blob' }
+    )
+
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `receipt-${invoiceId}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.add({ title: 'Receipt downloaded', color: 'success' })
+  } catch (error: any) {
+    toast.add({ title: 'Failed to download receipt', description: error.message, color: 'error' })
   }
 }
 
@@ -69,6 +92,14 @@ onMounted(() => {
 
         <template #notes-cell="{ row }">
           <span class="text-gray-500">{{ row.original.notes || '-' }}</span>
+        </template>
+
+        <template #actions-cell="{ row }">
+          <UButton v-if="row.original.invoice" size="xs" color="primary" variant="ghost"
+            @click="downloadReceipt(row.original.invoice.id)">
+            <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
+          </UButton>
+          <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #empty>

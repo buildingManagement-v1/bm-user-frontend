@@ -36,6 +36,30 @@ function handleChangePlanSuccess() {
   fetchSubscription()
 }
 
+async function downloadInvoice() {
+  if (!subscription.value) return
+
+  try {
+    const response = await api(
+      `/v1/platform/subscriptions/${subscription.value.id}/download`,
+      { responseType: 'blob' }
+    )
+
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `subscription-invoice-${subscription.value.id}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.add({ title: 'Invoice downloaded', color: 'success' })
+  } catch (error: any) {
+    toast.add({ title: 'Failed to download invoice', description: error.message, color: 'error' })
+  }
+}
+
 onMounted(() => {
   fetchSubscription()
 })
@@ -134,6 +158,13 @@ onMounted(() => {
             <span class="font-medium" :class="isExpiringSoon ? 'text-orange-600' : 'text-gray-900'">
               {{ daysRemaining }} days
             </span>
+          </div>
+
+          <div class="pt-4">
+            <UButton color="primary" variant="outline" block @click="downloadInvoice">
+              <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4 mr-2" />
+              Download Invoice
+            </UButton>
           </div>
         </div>
       </UCard>
