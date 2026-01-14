@@ -37,6 +37,6 @@ onUnmounted(() => {
         class="absolute -top-1 -right-1" />
     </UButton>
 
-    <NotificationDropdown v-model:open="isOpen" />
+    <Notificationdropdown v-model:open="isOpen" />
   </div>
 </template>

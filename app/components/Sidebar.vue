@@ -61,6 +61,11 @@ const allNavigation: NavItem[] = [
     managerRoles: [ManagerRole.REPORTS_VIEWER, ManagerRole.OPERATIONS_MANAGER]
   },
   {
+    label: 'Plans',
+    icon: 'i-heroicons-credit-card',
+    to: '/dashboard/plans'
+  },
+  {
     label: 'Managers',
     icon: 'i-heroicons-user-group',
     to: '/dashboard/managers',
