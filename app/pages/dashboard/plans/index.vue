@@ -4,13 +4,12 @@ import type { ApiResponse } from '~/types/api'
 interface Plan {
   id: string
   name: string
-  buildingPrice: number
-  managerPrice: number
+  price: number
   features: {
     maxBuildings: number
     maxManagers: number
     maxUnits: number
-    support: string
+    premiumFeatures: string[]
   }
   status: string
 }
@@ -40,14 +39,16 @@ async function subscribeFreePlan() {
   try {
     await api('/v1/app/subscriptions/subscribe-free', { method: 'POST' })
     toast.add({ title: 'Successfully subscribed to Free plan!', color: 'success' })
-    const { resetSubscription } = useSubscription()
-    resetSubscription()
     router.push('/dashboard')
   } catch (error: any) {
     toast.add({ title: 'Subscription failed', description: error.message, color: 'error' })
   } finally {
     subscribing.value = false
   }
+}
+
+function goToMyPlan() {
+  router.push('/dashboard/subscriptions')
 }
 
 onMounted(() => {
@@ -57,16 +58,21 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">Choose Your Plan</h1>
-      <p class="text-gray-600 mt-1">Select a plan to get started with our platform</p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Choose Your Plan</h1>
+        <p class="text-gray-600 mt-1">Select a plan to get started with our platform</p>
+      </div>
+      <UButton color="primary" variant="outline" @click="goToMyPlan">
+        My Plan
+      </UButton>
     </div>
 
     <div v-if="loading" class="flex justify-center py-12">
       <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
     </div>
 
-    <div v-else class="grid md:grid-cols-2 gap-6">
+    <div v-else class="grid md:grid-cols-3 gap-6">
       <UCard v-for="plan in plans" :key="plan.id" :class="plan.name === 'Free' ? 'border-2 border-primary-500' : ''">
         <template #header>
           <div class="flex items-center justify-between">
@@ -78,31 +84,32 @@ onMounted(() => {
         <div class="space-y-6">
           <div>
             <div class="flex items-baseline gap-2">
-              <span class="text-4xl font-bold text-gray-900">${{ plan.buildingPrice }}</span>
-              <span class="text-gray-600">/building/year</span>
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-              + ${{ plan.managerPrice }}/manager/year
+              <span class="text-4xl font-bold text-gray-900">${{ plan.price }}</span>
+              <span class="text-gray-600">/year</span>
             </div>
           </div>
 
           <div class="space-y-3">
             <div class="flex items-center gap-2 text-sm">
               <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
-              <span>Up to {{ plan.features.maxBuildings }} building{{ plan.features.maxBuildings > 1 ? 's' : ''
-                }}</span>
+              <span>{{ plan.features.maxBuildings }} building{{ plan.features.maxBuildings > 1 ? 's' : '' }}</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
-              <span>Up to {{ plan.features.maxManagers }} manager{{ plan.features.maxManagers > 1 ? 's' : '' }}</span>
+              <span>{{ plan.features.maxUnits }} units per building</span>
             </div>
             <div class="flex items-center gap-2 text-sm">
               <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
-              <span>Up to {{ plan.features.maxUnits }} units</span>
+              <span>{{ plan.features.maxManagers }} manager{{ plan.features.maxManagers > 1 ? 's' : '' }} per
+                building</span>
             </div>
-            <div class="flex items-center gap-2 text-sm">
-              <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
-              <span>{{ plan.features.support }}</span>
+            <div v-if="plan.features.premiumFeatures.length > 0" class="pt-2 border-t">
+              <p class="text-xs font-medium text-gray-700 mb-2">Premium Features:</p>
+              <div v-for="feature in plan.features.premiumFeatures" :key="feature"
+                class="flex items-center gap-2 text-xs text-gray-600">
+                <UIcon name="i-heroicons-star" class="w-4 h-4 text-yellow-500" />
+                <span>{{ feature }}</span>
+              </div>
             </div>
           </div>
 

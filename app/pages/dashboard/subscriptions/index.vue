@@ -1,13 +1,41 @@
 <script setup lang="ts">
-import type { Subscription } from '~/types/subscription'
 import type { ApiResponse } from '~/types/api'
+
+interface Subscription {
+  id: string
+  totalAmount: string
+  billingCycleStart: string
+  billingCycleEnd: string
+  nextBillingDate: string
+  status: string
+  plan?: {
+    id: string
+    name: string
+    price: number
+    type: string
+    features: {
+      maxBuildings: number
+      maxUnits: number
+      maxManagers: number
+      premiumFeatures: string[]
+    }
+  }
+}
+
+interface UsageStats {
+  buildingsUsed: number
+  unitsUsed: number
+  managersUsed: number
+}
 
 const { api } = useApi()
 const toast = useToast()
+const router = useRouter()
 
 const subscription = ref<Subscription | null>(null)
+const usage = ref<UsageStats>({ buildingsUsed: 0, unitsUsed: 0, managersUsed: 0 })
 const loading = ref(false)
-const isChangePlanModalOpen = ref(false)
+const loadingUsage = ref(false)
 
 const daysRemaining = computed(() => {
   if (!subscription.value) return 0
@@ -24,6 +52,10 @@ async function fetchSubscription() {
   try {
     const response = await api<ApiResponse<Subscription | null>>('/v1/app/subscriptions/my-subscription')
     subscription.value = response.data
+
+    if (subscription.value) {
+      await fetchUsageStats()
+    }
   } catch (error) {
     toast.add({ title: 'Failed to fetch subscription', color: 'error' })
   } finally {
@@ -31,9 +63,42 @@ async function fetchSubscription() {
   }
 }
 
-function handleChangePlanSuccess() {
-  isChangePlanModalOpen.value = false
-  fetchSubscription()
+async function fetchUsageStats() {
+  loadingUsage.value = true
+  try {
+    // Fetch buildings count
+    const buildingsRes = await api<ApiResponse<any[]>>('/v1/app/buildings')
+    usage.value.buildingsUsed = buildingsRes.data.length
+
+    // Fetch units count for each building
+    let totalUnits = 0
+    for (const building of buildingsRes.data) {
+      try {
+        const unitsRes = await api<ApiResponse<any[]>>('/v1/app/units', {
+          headers: { 'X-Building-Id': building.id }
+        })
+        totalUnits += unitsRes.data.length
+      } catch (err) {
+        console.error(`Failed to fetch units for building ${building.id}`, err)
+      }
+    }
+    usage.value.unitsUsed = totalUnits
+
+    // Fetch managers count
+    const managersRes = await api<ApiResponse<any[]>>('/v1/app/managers')
+    usage.value.managersUsed = managersRes.data.length
+  } catch (error) {
+    console.error('Failed to fetch usage stats', error)
+  } finally {
+    loadingUsage.value = false
+  }
+}
+
+function getUsageColor(used: number, max: number) {
+  const percentage = (used / max) * 100
+  if (percentage >= 90) return 'text-red-600'
+  if (percentage >= 70) return 'text-orange-600'
+  return 'text-green-600'
 }
 
 async function downloadInvoice() {
@@ -60,6 +125,10 @@ async function downloadInvoice() {
   }
 }
 
+function goToPlans() {
+  router.push('/dashboard/plans')
+}
+
 onMounted(() => {
   fetchSubscription()
 })
@@ -72,9 +141,6 @@ onMounted(() => {
         <h1 class="text-2xl font-bold text-gray-900">My Subscription</h1>
         <p class="text-gray-600 mt-1">View and manage your subscription</p>
       </div>
-      <UButton v-if="subscription" color="primary" icon="i-heroicons-arrow-path" @click="isChangePlanModalOpen = true">
-        Change Plan
-      </UButton>
     </div>
 
     <div v-if="loading" class="flex justify-center py-12">
@@ -84,7 +150,8 @@ onMounted(() => {
     <div v-else-if="!subscription" class="text-center py-12">
       <UIcon name="i-heroicons-exclamation-circle" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
       <h3 class="text-lg font-medium text-gray-900 mb-2">No Active Subscription</h3>
-      <p class="text-gray-600">You don't have an active subscription yet.</p>
+      <p class="text-gray-600 mb-4">You don't have an active subscription yet.</p>
+      <UButton color="primary" @click="goToPlans">View Plans</UButton>
     </div>
 
     <div v-else class="space-y-6">
@@ -98,9 +165,12 @@ onMounted(() => {
         <template #header>
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold">Current Plan</h2>
-            <UBadge :color="subscription.status === 'active' ? 'success' : 'warning'" variant="subtle">
-              {{ subscription.status }}
-            </UBadge>
+            <div class="flex items-center gap-2">
+              <UBadge v-if="subscription.plan?.type === 'custom'" color="primary" variant="subtle">Custom</UBadge>
+              <UBadge :color="subscription.status === 'active' ? 'success' : 'warning'" variant="subtle">
+                {{ subscription.status }}
+              </UBadge>
+            </div>
           </div>
         </template>
 
@@ -111,16 +181,80 @@ onMounted(() => {
             <span class="text-gray-600">/year</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="p-4 bg-gray-50 rounded-lg">
-              <div class="text-sm text-gray-600 mb-1">Buildings</div>
-              <div class="text-2xl font-semibold text-gray-900">{{ subscription.buildingCount }}</div>
+          <!-- Plan Features -->
+          <div v-if="subscription.plan" class="space-y-3 pt-4 border-t">
+            <div class="flex items-center gap-2 text-sm">
+              <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
+              <span>{{ subscription.plan.features.maxBuildings }} building{{ subscription.plan.features.maxBuildings > 1
+                ? 's' :
+                '' }}</span>
             </div>
+            <div class="flex items-center gap-2 text-sm">
+              <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
+              <span>{{ subscription.plan.features.maxUnits }} units per building</span>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+              <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-500" />
+              <span>{{ subscription.plan.features.maxManagers }} manager{{ subscription.plan.features.maxManagers > 1 ?
+                's' : ''
+                }} per building</span>
+            </div>
+            <div v-if="subscription.plan.features.premiumFeatures.length > 0" class="pt-2 border-t">
+              <p class="text-xs font-medium text-gray-700 mb-2">Premium Features:</p>
+              <div v-for="feature in subscription.plan.features.premiumFeatures" :key="feature"
+                class="flex items-center gap-2 text-xs text-gray-600">
+                <UIcon name="i-heroicons-star" class="w-4 h-4 text-yellow-500" />
+                <span>{{ feature }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
 
-            <div class="p-4 bg-gray-50 rounded-lg">
-              <div class="text-sm text-gray-600 mb-1">Managers</div>
-              <div class="text-2xl font-semibold text-gray-900">{{ subscription.managerCount }}</div>
+      <!-- Usage Statistics -->
+      <UCard v-if="subscription.plan">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Usage Statistics</h2>
+            <UIcon v-if="loadingUsage" name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin text-gray-400" />
+          </div>
+        </template>
+
+        <div v-if="loadingUsage" class="flex justify-center py-8">
+          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-primary-500" />
+        </div>
+
+        <div v-else class="grid grid-cols-3 gap-6">
+          <!-- Buildings Usage -->
+          <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-sm text-gray-600 mb-2">Buildings</div>
+            <div class="text-3xl font-bold"
+              :class="getUsageColor(usage.buildingsUsed, subscription.plan.features.maxBuildings)">
+              {{ usage.buildingsUsed }}
             </div>
+            <div class="text-sm text-gray-500 mt-1">of {{ subscription.plan.features.maxBuildings }}</div>
+          </div>
+
+          <!-- Units Usage -->
+          <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-sm text-gray-600 mb-2">Units (Total)</div>
+            <div class="text-3xl font-bold"
+              :class="getUsageColor(usage.unitsUsed, subscription.plan.features.maxUnits * Math.max(usage.buildingsUsed, 1))">
+              {{ usage.unitsUsed }}
+            </div>
+            <div class="text-sm text-gray-500 mt-1">of {{ subscription.plan.features.maxUnits *
+              Math.max(usage.buildingsUsed,
+              1) }}</div>
+          </div>
+
+          <!-- Managers Usage -->
+          <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-sm text-gray-600 mb-2">Managers</div>
+            <div class="text-3xl font-bold"
+              :class="getUsageColor(usage.managersUsed, subscription.plan.features.maxManagers)">
+              {{ usage.managersUsed }}
+            </div>
+            <div class="text-sm text-gray-500 mt-1">of {{ subscription.plan.features.maxManagers }}</div>
           </div>
         </div>
       </UCard>
@@ -168,43 +302,6 @@ onMounted(() => {
           </div>
         </div>
       </UCard>
-
-      <!-- Plan Details -->
-      <UCard v-if="subscription.plan">
-        <template #header>
-          <h2 class="text-lg font-semibold">Plan Details</h2>
-        </template>
-
-        <div class="space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-gray-600">Price per Building (Yearly)</span>
-            <span class="font-medium text-gray-900">${{ subscription.plan.buildingPrice }}</span>
-          </div>
-
-          <div class="flex justify-between items-center">
-            <span class="text-gray-600">Price per Manager (Yearly)</span>
-            <span class="font-medium text-gray-900">${{ subscription.plan.managerPrice }}</span>
-          </div>
-
-          <div class="pt-4 border-t border-gray-200">
-            <div class="text-xs text-gray-500 mb-2">Calculation:</div>
-            <div class="text-sm text-gray-700">
-              ({{ subscription.buildingCount }} buildings × ${{ subscription.plan.buildingPrice }}) +
-              ({{ subscription.managerCount }} managers × ${{ subscription.plan.managerPrice }}) =
-              <span class="font-semibold">${{ subscription.totalAmount }}/year</span>
-            </div>
-          </div>
-        </div>
-      </UCard>
     </div>
-
-    <UModal v-model:open="isChangePlanModalOpen" title="Change Plan">
-      <template #body>
-        <div>
-          <ChangePlanModal v-if="subscription" :subscription="subscription" @success="handleChangePlanSuccess"
-            @cancel="isChangePlanModalOpen = false" />
-        </div>
-      </template>
-    </UModal>
   </div>
 </template>
