@@ -2,6 +2,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const { isAuthenticated, user } = useAuth();
 
   const publicRoutes = [
+    "/",
     "/login",
     "/register",
     "/forgot-password",
