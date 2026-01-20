@@ -93,9 +93,9 @@ async function fetchTenantLeases(tenantId: string) {
   try {
     const response = await buildingApi<ApiResponse<Lease[]>>(
       selectedBuildingId.value,
-      '/v1/app/leases'
+      `/v1/app/leases/tenant/${tenantId}`
     )
-    tenantLeases.value = response.data.filter(l => l.tenantId === tenantId)
+    tenantLeases.value = response.data
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch leases', description: error.message || '', color: 'error' })
   } finally {
