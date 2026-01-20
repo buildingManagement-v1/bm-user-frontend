@@ -16,6 +16,7 @@ const loading = ref(false)
 const loadingBuildings = ref(false)
 const loadingLeases = ref(false)
 const isCreateModalOpen = ref(false)
+const isOnboardModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const isLeaseModalOpen = ref(false)
 const isLeaseFormModalOpen = ref(false)
@@ -160,6 +161,7 @@ async function deleteLease(id: string) {
 
 function handleSuccess() {
   isCreateModalOpen.value = false
+  isOnboardModalOpen.value = false
   isEditModalOpen.value = false
   selectedTenant.value = null
   fetchTenants()
@@ -199,9 +201,13 @@ onMounted(() => {
       <div class="flex items-center gap-3">
         <USelectMenu v-model="selectedBuilding" :items="buildingOptions" placeholder="Select building"
           :loading="loadingBuildings" class="w-64" />
-        <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true"
+        <UButton color="primary" icon="i-heroicons-plus" @click="isOnboardModalOpen = true"
           :disabled="!selectedBuildingId">
-          Add Tenant
+          Onboard Tenant
+        </UButton>
+        <UButton color="neutral" variant="outline" icon="i-heroicons-user-plus" @click="isCreateModalOpen = true"
+          :disabled="!selectedBuildingId">
+          Add Only
         </UButton>
       </div>
     </div>
@@ -251,16 +257,36 @@ onMounted(() => {
             <UIcon name="i-heroicons-users" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p class="text-gray-900 font-medium mb-2">No tenants yet</p>
             <p class="text-gray-500 mb-4">
-              {{ selectedBuildingId ? 'Get started by adding your first tenant' : 'Select a building to manage tenants'
+              {{ selectedBuildingId ?
+                'Get started by onboarding your first tenant' : 'Select a building to manage tenants'
               }}
             </p>
-            <UButton v-if="selectedBuildingId" color="primary" @click="isCreateModalOpen = true">
-              Add Tenant
+            <UButton v-if="selectedBuildingId" color="primary" @click="isOnboardModalOpen = true">
+              Onboard Tenant
             </UButton>
           </div>
         </template>
       </UTable>
     </UCard>
+
+    <!-- Onboard Tenant Modal -->
+    <UModal v-model:open="isOnboardModalOpen" title="Onboard New Tenant" size="2xl"
+      :ui="{ body: 'max-h-3/5 overflow-y-auto' }">
+      <template #body>
+        <TenantOnboardingForm v-if="selectedBuildingId" :building-id="selectedBuildingId" @success="handleSuccess"
+          @cancel="isOnboardModalOpen = false" />
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end">
+          <UButton color="neutral" variant="ghost" @click="isOnboardModalOpen = false">
+            Cancel
+          </UButton>
+          <UButton color="primary" form="onboard-form" type="submit">
+            Onboard Tenant
+          </UButton>
+        </div>
+      </template>
+    </UModal>
 
     <!-- Create Tenant Modal -->
     <UModal v-model:open="isCreateModalOpen" title="Add New Tenant">
