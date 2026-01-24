@@ -136,13 +136,21 @@ function isActive(itemTo: string) {
 
     <nav class="p-4 space-y-2">
       <NuxtLink v-for="item in navigation" :key="item.to" :to="item.to" :class="[
-        'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
+        'group relative flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 border ',
         isActive(item.to)
-          ? 'bg-primary-50 text-primary-600'
-          : 'text-gray-700 hover:bg-gray-100',
+          ? 'bg-primary-50 text-primary-700 border-primary-200'
+          : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 border-transparent',
       ]">
-        <UIcon :name="item.icon" class="w-5 h-5 shrink-0" />
-        <span v-if="isOpen" class="font-medium">{{ item.label }}</span>
+        <div v-if="isActive(item.to)" class="absolute left-0 w-1 h-5 bg-primary-500 rounded-r-full" />
+
+        <UIcon :name="item.icon" :class="[
+          'w-5 h-5 shrink-0 transition-colors',
+          isActive(item.to) ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600'
+        ]" />
+
+        <span v-if="isOpen" class="font-medium">
+          {{ item.label }}
+        </span>
       </NuxtLink>
     </nav>
 

@@ -116,6 +116,48 @@ function formatEntityType(type: string) {
   return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
+function formatDetails(details: any, depth = 0): any[] {
+  if (!details || typeof details !== 'object') return []
+
+  const entries: any[] = []
+
+  Object.entries(details).forEach(([key, value]) => {
+    const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
+
+    // Handle nested objects - recursively format them
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      entries.push({
+        key: label,
+        value: null,
+        isNested: true,
+        depth
+      })
+      // Add nested items with increased depth
+      entries.push(...formatDetails(value, depth + 1))
+    }
+    // Handle arrays
+    else if (Array.isArray(value)) {
+      entries.push({
+        key: label,
+        value: value.join(', '),
+        isNested: false,
+        depth
+      })
+    }
+    // Handle primitives
+    else {
+      entries.push({
+        key: label,
+        value: String(value),
+        isNested: false,
+        depth
+      })
+    }
+  })
+
+  return entries
+}
+
 function getActionColor(action: string) {
   switch (action) {
     case 'create': return 'success'
@@ -201,8 +243,11 @@ onMounted(() => {
         </template>
 
         <template #details-cell="{ row }">
-          <div v-if="row.original.details" class="text-sm text-gray-600 max-w-xs truncate">
-            {{ JSON.stringify(row.original.details) }}
+          <div v-if="row.original.details" class="text-sm space-y-1">
+            <div v-for="(item, idx) in formatDetails(row.original.details)" :key="idx" class="flex gap-2">
+              <span class="font-medium text-gray-700">{{ item.key }}:</span>
+              <span class="text-gray-600">{{ item.value }}</span>
+            </div>
           </div>
           <span v-else class="text-gray-400">-</span>
         </template>

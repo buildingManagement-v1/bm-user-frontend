@@ -7,7 +7,7 @@ function toggleSidebar() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50/70">
     <Sidebar :is-open="sidebarOpen" @toggle="toggleSidebar" />
 
     <div :class="[
