@@ -3,7 +3,6 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { createTenantSchema, updateTenantSchema, type CreateTenantSchema, type UpdateTenantSchema } from '~/schemas/tenant'
 import type { Tenant } from '~/types/tenant'
 import { TenantStatus } from '~/types/tenant'
-import type { Unit } from '~/types/unit'
 import type { ApiResponse } from '~/types'
 
 const props = defineProps<{
@@ -20,69 +19,37 @@ const emit = defineEmits<{
 const { buildingApi } = useApi()
 const toast = useToast()
 
-const state = reactive<{
-  name: string
-  email: string
-  phone?: string
-  unitId?: string
-  status: TenantStatus,
-  password?: string
-}>({
-  name: props.tenant?.name || '',
-  email: props.tenant?.email || '',
-  phone: props.tenant?.phone,
-  unitId: props.tenant?.unitId,
-  status: props.tenant?.status || TenantStatus.ACTIVE,
-  password: '',
-})
+const state = reactive<CreateTenantSchema | UpdateTenantSchema>(
+  props.mode === 'create'
+    ? {
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+    }
+    : {
+      name: props.tenant?.name || '',
+      email: props.tenant?.email || '',
+      phone: props.tenant?.phone,
+      status: props.tenant?.status || TenantStatus.ACTIVE,
+    }
+)
 
 const loading = ref(false)
-const loadingUnits = ref(false)
-const units = ref<Unit[]>([])
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
   { value: 'inactive', label: 'Inactive' },
 ]
 
-const unitOptions = computed(() => [
-  { value: undefined, label: 'No Unit Assigned' },
-  ...units.value.map(u => ({
-    value: u.id,
-    label: `${u.unitNumber}${u.floor ? ` - Floor ${u.floor}` : ''} ${u.status === 'occupied' ? '(Occupied)' : ''}`,
-    disabled: u.status === 'occupied' && u.id !== props.tenant?.unitId
-  }))
-])
-
 const selectedStatus = computed({
-  get: () => statusOptions.find(s => s.value === state.status),
+  get: () => statusOptions.find(s => s.value === (state as UpdateTenantSchema).status),
   set: (val: { value: string; label: string } | undefined) => {
-    state.status = (val?.value as TenantStatus) || 'active'
+    if (props.mode === 'edit') {
+      (state as UpdateTenantSchema).status = (val?.value as TenantStatus) || 'active'
+    }
   }
 })
-
-const selectedUnit = computed({
-  get: () => unitOptions.value.find(u => u.value === state.unitId),
-  set: (val: { value: string | undefined; label: string } | undefined) => {
-    state.unitId = val?.value
-  }
-})
-
-async function fetchUnits() {
-  loadingUnits.value = true
-  try {
-    const response = await buildingApi<ApiResponse<Unit[]>>(
-      props.buildingId,
-      '/v1/app/units'
-    )
-    units.value = response.data
-    console.log('Fetched units:', response.data)
-  } catch (error: any) {
-    toast.add({ title: 'Failed to fetch units', description: error.message, color: 'error' })
-  } finally {
-    loadingUnits.value = false
-  }
-}
 
 async function onSubmit(event: FormSubmitEvent<CreateTenantSchema | UpdateTenantSchema>) {
   loading.value = true
@@ -119,10 +86,6 @@ async function onSubmit(event: FormSubmitEvent<CreateTenantSchema | UpdateTenant
     loading.value = false
   }
 }
-
-onMounted(() => {
-  fetchUnits()
-})
 </script>
 
 <template>
@@ -140,17 +103,12 @@ onMounted(() => {
       <UInput v-model="state.phone" type="tel" placeholder="+1 234 567 8900" :ui="{ root: 'w-full' }" />
     </UFormField>
 
-    <UFormField label="Unit Assignment" name="unitId">
-      <USelectMenu v-model="selectedUnit" :items="unitOptions" :loading="loadingUnits" placeholder="Select a unit"
-        class="w-full" />
-    </UFormField>
-
-    <UFormField label="Status" name="status">
+    <UFormField v-if="mode === 'edit'" label="Status" name="status">
       <USelectMenu v-model="selectedStatus" :items="statusOptions" class="w-full" />
     </UFormField>
 
-    <UFormField v-if="mode === 'create'" label="Password (Optional)" name="password">
-      <UInput v-model="state.password" type="password" placeholder="Leave empty for no password"
+    <UFormField v-if="mode === 'create'" label="Password" name="password" required>
+      <UInput v-model="(state as CreateTenantSchema).password" type="password" placeholder="Enter password"
         :ui="{ root: 'w-full' }" />
     </UFormField>
 

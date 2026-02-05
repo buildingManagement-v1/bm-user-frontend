@@ -6,19 +6,24 @@ export const createLeaseSchema = z.object({
   unitId: z.string().uuid("Invalid unit"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),
-  rentAmount: z.number().positive("Rent amount must be greater than 0"),
-  securityDeposit: z.number().positive().optional(),
+  rentAmount: z.coerce.number().positive("Rent amount must be greater than 0"),
+  securityDeposit: z.coerce.number().positive().optional().or(z.literal("")),
   status: z.nativeEnum(LeaseStatus).optional(),
 });
 
 export const updateLeaseSchema = z.object({
   startDate: z.string().min(1, "Start date is required").optional(),
   endDate: z.string().min(1, "End date is required").optional(),
-  rentAmount: z
+  rentAmount: z.coerce
     .number()
     .positive("Rent amount must be greater than 0")
     .optional(),
-  securityDeposit: z.number().positive().optional(),
+  securityDeposit: z.coerce
+    .number()
+    .positive()
+    .optional()
+    .or(z.literal(""))
+    .or(z.undefined()),
   status: z.nativeEnum(LeaseStatus).optional(),
 });
 

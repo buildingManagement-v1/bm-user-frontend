@@ -25,8 +25,8 @@ const state = reactive<{
   unitId: string
   startDate: string
   endDate: string
-  rentAmount: number
-  securityDeposit?: number
+  rentAmount: number | string
+  securityDeposit?: number | string
   status: LeaseStatus
 }>({
   tenantId: props.tenantId,
@@ -34,7 +34,7 @@ const state = reactive<{
   startDate: props.lease?.startDate ? new Date(props.lease.startDate).toISOString().split('T')[0] || '' : '',
   endDate: props.lease?.endDate ? new Date(props.lease.endDate).toISOString().split('T')[0] || '' : '',
   rentAmount: props.lease?.rentAmount || 0,
-  securityDeposit: props.lease?.securityDeposit,
+  securityDeposit: props.lease?.securityDeposit || '',
   status: props.lease?.status as LeaseStatus || 'active',
 })
 
@@ -98,12 +98,13 @@ async function onSubmit(event: FormSubmitEvent<CreateLeaseSchema>) {
       )
       toast.add({ title: 'Lease created successfully', color: 'success' })
     } else {
+      const { tenantId, unitId, status, ...updateData } = event.data
       await buildingApi<ApiResponse<Lease>>(
         props.buildingId,
         `/v1/app/leases/${props.lease!.id}`,
         {
           method: 'PATCH',
-          body: event.data,
+          body: updateData,
         }
       )
       toast.add({ title: 'Lease updated successfully', color: 'success' })
@@ -111,7 +112,7 @@ async function onSubmit(event: FormSubmitEvent<CreateLeaseSchema>) {
     emit('success')
   } catch (error: any) {
     toast.add({
-      title: `Failed to ${props.mode} lease`,
+      title: props.mode === 'create' ? 'Failed to create lease' : 'Failed to update lease',
       description: error.message,
       color: 'error'
     })
@@ -151,10 +152,6 @@ onMounted(() => {
         <UInput v-model.number="state.securityDeposit" type="number" placeholder="0.00" :ui="{ root: 'w-full' }" />
       </UFormField>
     </div>
-
-    <UFormField label="Status" name="status">
-      <USelectMenu v-model="selectedStatus" :items="statusOptions" class="w-full" />
-    </UFormField>
 
     <div class="flex gap-2 justify-end pt-4">
       <UButton type="button" color="neutral" variant="ghost" @click="emit('cancel')">

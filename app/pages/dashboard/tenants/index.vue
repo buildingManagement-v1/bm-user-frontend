@@ -5,6 +5,14 @@ import type { Building } from '~/types/building'
 import type { Lease } from '~/types/lease'
 import type { ApiResponse } from '~/types'
 
+type TenantWithUnit = Tenant & {
+  activeUnit?: {
+    id: string;
+    unitNumber: string;
+    floor?: number;
+  };
+}
+
 const { api, buildingApi } = useApi()
 const toast = useToast()
 
@@ -16,7 +24,6 @@ const loading = ref(false)
 const loadingBuildings = ref(false)
 const loadingLeases = ref(false)
 const isCreateModalOpen = ref(false)
-const isOnboardModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const isLeaseModalOpen = ref(false)
 const isLeaseFormModalOpen = ref(false)
@@ -25,7 +32,7 @@ const selectedTenant = ref<Tenant | null>(null)
 const selectedLease = ref<Lease | null>(null)
 const leaseMode = ref<'create' | 'edit'>('create')
 
-const columns: TableColumn<Tenant>[] = [
+const columns: TableColumn<TenantWithUnit>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'email', header: 'Email' },
   { accessorKey: 'phone', header: 'Phone' },
@@ -54,6 +61,16 @@ const selectedBuilding = computed({
   }
 })
 
+const tenantsWithUnits = computed<TenantWithUnit[]>(() => {
+  return tenants.value.map(tenant => {
+    const activeLease = tenant.leases?.find(l => l.status === 'active')
+    return {
+      ...tenant,
+      activeUnit: activeLease?.unit as { id: string; unitNumber: string; floor?: number } | undefined
+    }
+  })
+})
+
 async function fetchBuildings() {
   loadingBuildings.value = true
   try {
@@ -78,7 +95,21 @@ async function fetchTenants() {
       selectedBuildingId.value,
       '/v1/app/tenants'
     )
-    tenants.value = response.data
+    // Fetch leases for each tenant
+    const tenantsWithLeases = await Promise.all(
+      response.data.map(async (tenant) => {
+        try {
+          const leasesResponse = await buildingApi<ApiResponse<any[]>>(
+            selectedBuildingId.value!,
+            `/v1/app/leases/tenant/${tenant.id}`
+          )
+          return { ...tenant, leases: leasesResponse.data }
+        } catch {
+          return { ...tenant, leases: [] }
+        }
+      })
+    )
+    tenants.value = tenantsWithLeases
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch tenants', description: error.message || '', color: 'error' })
   } finally {
@@ -100,6 +131,28 @@ async function fetchTenantLeases(tenantId: string) {
     toast.add({ title: 'Failed to fetch leases', description: error.message || '', color: 'error' })
   } finally {
     loadingLeases.value = false
+  }
+}
+
+async function terminateLease(lease: Lease) {
+  if (!confirm(`Are you sure you want to terminate the lease for ${lease.unit.unitNumber}?`)) return
+  if (!selectedBuildingId.value) return
+
+  try {
+    await buildingApi(
+      selectedBuildingId.value,
+      `/v1/app/leases/${lease.id}`,
+      {
+        method: 'PATCH',
+        body: { status: 'terminated' }
+      }
+    )
+    toast.add({ title: 'Lease terminated successfully', color: 'success' })
+    if (selectedTenant.value) {
+      fetchTenantLeases(selectedTenant.value.id)
+    }
+  } catch (error: any) {
+    toast.add({ title: 'Failed to terminate lease', description: error.message || '', color: 'error' })
   }
 }
 
@@ -161,7 +214,6 @@ async function deleteLease(id: string) {
 
 function handleSuccess() {
   isCreateModalOpen.value = false
-  isOnboardModalOpen.value = false
   isEditModalOpen.value = false
   selectedTenant.value = null
   fetchTenants()
@@ -201,32 +253,28 @@ onMounted(() => {
       <div class="flex items-center gap-3">
         <USelectMenu v-model="selectedBuilding" :items="buildingOptions" placeholder="Select building"
           :loading="loadingBuildings" class="w-64" />
-        <UButton color="primary" icon="i-heroicons-plus" @click="isOnboardModalOpen = true"
+        <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true"
           :disabled="!selectedBuildingId">
-          Onboard Tenant
-        </UButton>
-        <UButton color="neutral" variant="outline" icon="i-heroicons-user-plus" @click="isCreateModalOpen = true"
-          :disabled="!selectedBuildingId">
-          Add Only
+          Add Tenant
         </UButton>
       </div>
     </div>
 
     <UCard>
-      <UTable :data="tenants" :columns="columns" :loading="loading">
+      <UTable :data="tenantsWithUnits" :columns="columns" :loading="loading">
         <template #phone-cell="{ row }">
           <span v-if="row.original.phone">{{ row.original.phone }}</span>
           <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #unitId-cell="{ row }">
-          <span v-if="row.original.unit">
-            {{ row.original.unit.unitNumber }}
-            <span v-if="row.original.unit.floor" class="text-gray-500">
-              (Floor {{ row.original.unit.floor }})
+          <span v-if="row.original.activeUnit">
+            {{ row.original.activeUnit.unitNumber }}
+            <span v-if="row.original.activeUnit.floor" class="text-gray-500">
+              (Floor {{ row.original.activeUnit.floor }})
             </span>
           </span>
-          <span v-else class="text-gray-400">No unit assigned</span>
+          <span v-else class="text-gray-400">No active lease</span>
         </template>
 
         <template #status-cell="{ row }">
@@ -257,36 +305,16 @@ onMounted(() => {
             <UIcon name="i-heroicons-users" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p class="text-gray-900 font-medium mb-2">No tenants yet</p>
             <p class="text-gray-500 mb-4">
-              {{ selectedBuildingId ?
-                'Get started by onboarding your first tenant' : 'Select a building to manage tenants'
+              {{ selectedBuildingId ? 'Get started by adding your first tenant' : 'Select a building to manage tenants'
               }}
             </p>
-            <UButton v-if="selectedBuildingId" color="primary" @click="isOnboardModalOpen = true">
-              Onboard Tenant
+            <UButton v-if="selectedBuildingId" color="primary" @click="isCreateModalOpen = true">
+              Add Tenant
             </UButton>
           </div>
         </template>
       </UTable>
     </UCard>
-
-    <!-- Onboard Tenant Modal -->
-    <UModal v-model:open="isOnboardModalOpen" title="Onboard New Tenant" size="2xl"
-      :ui="{ body: 'max-h-3/5 overflow-y-auto' }">
-      <template #body>
-        <TenantOnboardingForm v-if="selectedBuildingId" :building-id="selectedBuildingId" @success="handleSuccess"
-          @cancel="isOnboardModalOpen = false" />
-      </template>
-      <template #footer>
-        <div class="flex gap-2 justify-end">
-          <UButton color="neutral" variant="ghost" @click="isOnboardModalOpen = false">
-            Cancel
-          </UButton>
-          <UButton color="primary" form="onboard-form" type="submit">
-            Onboard Tenant
-          </UButton>
-        </div>
-      </template>
-    </UModal>
 
     <!-- Create Tenant Modal -->
     <UModal v-model:open="isCreateModalOpen" title="Add New Tenant">
@@ -345,8 +373,13 @@ onMounted(() => {
 
             <template #actions-cell="{ row }">
               <div class="flex gap-2">
-                <UButton size="xs" color="neutral" variant="ghost" @click="openEditLeaseModal(row.original)">
+                <UButton v-if="row.original.status !== 'terminated'" size="xs" color="neutral" variant="ghost"
+                  @click="openEditLeaseModal(row.original)">
                   Edit
+                </UButton>
+                <UButton v-if="row.original.status === 'active'" size="xs" color="error" variant="soft"
+                  @click="terminateLease(row.original)">
+                  Terminate
                 </UButton>
                 <UButton size="xs" color="error" variant="ghost" @click="deleteLease(row.original.id)">
                   Delete

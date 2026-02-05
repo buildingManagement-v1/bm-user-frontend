@@ -6,18 +6,21 @@ export enum TenantStatus {
 export interface Tenant {
   id: string;
   buildingId: string;
-  unitId?: string;
   name: string;
   email: string;
   phone?: string;
   status: TenantStatus;
   createdAt: string;
   updatedAt: string;
-  unit?: {
+  leases?: Array<{
     id: string;
-    unitNumber: string;
-    floor?: number;
-  };
+    status: string;
+    unit: {
+      id: string;
+      unitNumber: string;
+      floor?: number;
+    };
+  }>;
 }
 
 export interface CreateTenantRequest {
