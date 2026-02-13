@@ -2,7 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { Unit } from '~/types/unit'
 import type { Building } from '~/types/building'
-import type { ApiResponse } from '~/types'
+import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
@@ -11,6 +11,9 @@ const units = ref<Unit[]>([])
 const buildings = ref<Building[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 const loadingBuildings = ref(false)
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
@@ -57,16 +60,24 @@ async function fetchUnits() {
 
   loading.value = true
   try {
-    const response = await buildingApi<ApiResponse<Unit[]>>(
+    const offset = (currentPage.value - 1) * limit.value
+    const response = await buildingApi<PaginatedResponse<Unit[]>>(
       selectedBuildingId.value,
-      '/v1/app/units'
+      `/v1/app/units?limit=${limit.value}&offset=${offset}`
     )
     units.value = response.data
+    pageInfo.value = response.meta.page_info
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch units', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchUnits()
 }
 
 function openEditModal(unit: Unit) {
@@ -96,6 +107,7 @@ function handleSuccess() {
 
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
+    currentPage.value = 1
     fetchUnits()
   }
 })
@@ -124,6 +136,12 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="units"
+        :current-count="units.length"
+        @go-to-page="goToPage"
+      />
       <UTable :data="units" :columns="columns" :loading="loading">
         <template #floor-cell="{ row }">
           <span v-if="row.original.floor !== null && row.original.floor !== undefined">{{ row.original.floor }}</span>
