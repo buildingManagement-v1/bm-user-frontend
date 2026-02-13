@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import type { ActivityLog, ActivityAction, ActivityEntityType } from '~/types/activity-log'
-import type { Building } from '~/types/building'
 import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
 
 const logs = ref<ActivityLog[]>([])
-const buildings = ref<Building[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
 const currentPage = ref(1)
-const loadingBuildings = ref(false)
 
 const startDate = ref('')
 const endDate = ref('')
@@ -48,17 +45,6 @@ const columns: TableColumn<ActivityLog>[] = [
   { accessorKey: 'details', header: 'Details' },
 ]
 
-const buildingOptions = computed(() =>
-  buildings.value.map(b => ({ value: b.id, label: b.name }))
-)
-
-const selectedBuilding = computed({
-  get: () => buildingOptions.value.find(b => b.value === selectedBuildingId.value),
-  set: (val: { value: string; label: string } | undefined) => {
-    selectedBuildingId.value = val?.value || ''
-  }
-})
-
 const selectedActionOption = computed({
   get: () => actionOptions.find(a => a.value === selectedAction.value),
   set: (val: { value: string; label: string } | undefined) => {
@@ -72,21 +58,6 @@ const selectedEntityOption = computed({
     selectedEntityType.value = (val?.value as ActivityEntityType) || ''
   }
 })
-
-async function fetchBuildings() {
-  loadingBuildings.value = true
-  try {
-    const response = await api<ApiResponse<Building[]>>('/v1/app/buildings')
-    buildings.value = response.data.filter(b => b.status === 'active')
-    if (buildings.value.length > 0 && !selectedBuildingId.value) {
-      selectedBuildingId.value = buildings.value[0]!.id
-    }
-  } catch (error: any) {
-    toast.add({ title: 'Failed to fetch buildings', description: error.message, color: 'error' })
-  } finally {
-    loadingBuildings.value = false
-  }
-}
 
 async function fetchLogs() {
   if (!selectedBuildingId.value) return
@@ -194,9 +165,6 @@ watch(selectedBuildingId, () => {
   }
 })
 
-onMounted(() => {
-  fetchBuildings()
-})
 </script>
 
 <template>
@@ -207,8 +175,7 @@ onMounted(() => {
         <p class="text-gray-600 mt-1">Track all changes and actions</p>
       </div>
 
-      <USelectMenu v-model="selectedBuilding" :items="buildingOptions" placeholder="Select building"
-        :loading="loadingBuildings" class="w-64" />
+        <BuildingSelector v-model="selectedBuildingId" />
     </div>
 
     <UCard>

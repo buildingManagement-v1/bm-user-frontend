@@ -1,3 +1,8 @@
+export interface BuildingOption {
+  id: string;
+  name: string;
+}
+
 export interface Building {
   id: string;
   userId: string;
