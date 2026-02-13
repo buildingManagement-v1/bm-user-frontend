@@ -12,9 +12,26 @@ const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
 const currentPage = ref(1)
+const filterStatus = ref<string>('')
+const searchQ = ref('')
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const selectedUnit = ref<Unit | null>(null)
+
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'vacant', label: 'Vacant' },
+  { value: 'occupied', label: 'Occupied' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
+const selectedStatusOption = computed({
+  get: () => statusOptions.find(o => o.value === filterStatus.value) ?? statusOptions[0],
+  set: (v: { value: string; label: string } | undefined) => {
+    filterStatus.value = v?.value ?? ''
+    onFilterChange()
+  },
+})
 
 const columns: TableColumn<Unit>[] = [
   { accessorKey: 'unitNumber', header: 'Unit Number' },
@@ -32,9 +49,14 @@ async function fetchUnits() {
   loading.value = true
   try {
     const offset = (currentPage.value - 1) * limit.value
+    const params = new URLSearchParams()
+    params.set('limit', String(limit.value))
+    params.set('offset', String(offset))
+    if (filterStatus.value) params.set('status', filterStatus.value)
+    if (searchQ.value.trim()) params.set('q', searchQ.value.trim())
     const response = await buildingApi<PaginatedResponse<Unit[]>>(
       selectedBuildingId.value,
-      `/v1/app/units?limit=${limit.value}&offset=${offset}`
+      `/v1/app/units?${params.toString()}`
     )
     units.value = response.data
     pageInfo.value = response.meta.page_info
@@ -53,6 +75,11 @@ function goToPage(page: number) {
 
 function onLimitChange(newLimit: number) {
   limit.value = newLimit
+  currentPage.value = 1
+  fetchUnits()
+}
+
+function onFilterChange() {
   currentPage.value = 1
   fetchUnits()
 }
@@ -107,6 +134,29 @@ watch(selectedBuildingId, () => {
         </UButton>
       </div>
     </div>
+
+    <UCard v-if="selectedBuildingId" class="mb-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Status</span>
+          <USelectMenu
+            v-model="selectedStatusOption"
+            :items="statusOptions"
+            class="w-40"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Unit number</span>
+          <UInput
+            v-model="searchQ"
+            placeholder="Search..."
+            class="w-48"
+            @keyup.enter="onFilterChange"
+          />
+          <UButton size="sm" color="neutral" variant="outline" @click="onFilterChange">Search</UButton>
+        </div>
+      </div>
+    </UCard>
 
     <UCard>
       <PaginationBar

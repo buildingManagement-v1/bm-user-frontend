@@ -12,7 +12,40 @@ const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
 const currentPage = ref(1)
+const filterStatus = ref<string>('')
+const filterPriority = ref<string>('')
+const searchQ = ref('')
 const deletingId = ref<string | null>(null)
+
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
+const priorityOptions = [
+  { value: '', label: 'All priorities' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' },
+]
+
+const selectedStatusOption = computed({
+  get: () => statusOptions.find(o => o.value === filterStatus.value) ?? statusOptions[0],
+  set: (v: { value: string } | undefined) => {
+    filterStatus.value = v?.value ?? ''
+    onFilterChange()
+  },
+})
+const selectedPriorityOption = computed({
+  get: () => priorityOptions.find(o => o.value === filterPriority.value) ?? priorityOptions[0],
+  set: (v: { value: string } | undefined) => {
+    filterPriority.value = v?.value ?? ''
+    onFilterChange()
+  },
+})
 const isCreateModalOpen = ref(false)
 const isViewModalOpen = ref(false)
 const isUpdateModalOpen = ref(false)
@@ -36,9 +69,15 @@ async function fetchRequests() {
   loading.value = true
   try {
     const offset = (currentPage.value - 1) * limit.value
+    const params = new URLSearchParams()
+    params.set('limit', String(limit.value))
+    params.set('offset', String(offset))
+    if (filterStatus.value) params.set('status', filterStatus.value)
+    if (filterPriority.value) params.set('priority', filterPriority.value)
+    if (searchQ.value.trim()) params.set('q', searchQ.value.trim())
     const response = await buildingApi<PaginatedResponse<MaintenanceRequest[]>>(
       selectedBuildingId.value,
-      `/v1/app/maintenance-requests?limit=${limit.value}&offset=${offset}`
+      `/v1/app/maintenance-requests?${params.toString()}`
     )
     requests.value = response.data
     pageInfo.value = response.meta.page_info
@@ -57,6 +96,11 @@ function goToPage(page: number) {
 
 function onLimitChange(newLimit: number) {
   limit.value = newLimit
+  currentPage.value = 1
+  fetchRequests()
+}
+
+function onFilterChange() {
   currentPage.value = 1
   fetchRequests()
 }
@@ -129,6 +173,24 @@ watch(selectedBuildingId, () => {
         </UButton>
       </div>
     </div>
+
+    <UCard v-if="selectedBuildingId" class="mb-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Status</span>
+          <USelectMenu v-model="selectedStatusOption" :items="statusOptions" class="w-40" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Priority</span>
+          <USelectMenu v-model="selectedPriorityOption" :items="priorityOptions" class="w-40" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Tenant name</span>
+          <UInput v-model="searchQ" placeholder="Search..." class="w-48" @keyup.enter="onFilterChange" />
+          <UButton size="sm" color="neutral" variant="outline" @click="onFilterChange">Search</UButton>
+        </div>
+      </div>
+    </UCard>
 
     <UCard>
       <PaginationBar

@@ -12,7 +12,26 @@ const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
 const currentPage = ref(1)
+const filterStatus = ref<string>('')
+const searchQ = ref('')
 const isDetailModalOpen = ref(false)
+
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'overdue', label: 'Overdue' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
+
+const selectedStatusOption = computed({
+  get: () => statusOptions.find(o => o.value === filterStatus.value) ?? statusOptions[0],
+  set: (v: { value: string } | undefined) => {
+    filterStatus.value = v?.value ?? ''
+    onFilterChange()
+  },
+})
 const selectedInvoice = ref<Invoice | null>(null)
 
 const columns: TableColumn<Invoice>[] = [
@@ -31,9 +50,14 @@ async function fetchInvoices() {
   loading.value = true
   try {
     const offset = (currentPage.value - 1) * limit.value
+    const params = new URLSearchParams()
+    params.set('limit', String(limit.value))
+    params.set('offset', String(offset))
+    if (filterStatus.value) params.set('status', filterStatus.value)
+    if (searchQ.value.trim()) params.set('q', searchQ.value.trim())
     const response = await buildingApi<PaginatedResponse<Invoice[]>>(
       selectedBuildingId.value,
-      `/v1/app/invoices?limit=${limit.value}&offset=${offset}`
+      `/v1/app/invoices?${params.toString()}`
     )
     invoices.value = response.data
     pageInfo.value = response.meta.page_info
@@ -52,6 +76,11 @@ function goToPage(page: number) {
 
 function onLimitChange(newLimit: number) {
   limit.value = newLimit
+  currentPage.value = 1
+  fetchInvoices()
+}
+
+function onFilterChange() {
   currentPage.value = 1
   fetchInvoices()
 }
@@ -111,6 +140,20 @@ watch(selectedBuildingId, () => {
         <BuildingSelector v-model="selectedBuildingId" />
       </div>
     </div>
+
+    <UCard v-if="selectedBuildingId" class="mb-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Status</span>
+          <USelectMenu v-model="selectedStatusOption" :items="statusOptions" class="w-40" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Invoice number</span>
+          <UInput v-model="searchQ" placeholder="Search..." class="w-48" @keyup.enter="onFilterChange" />
+          <UButton size="sm" color="neutral" variant="outline" @click="onFilterChange">Search</UButton>
+        </div>
+      </div>
+    </UCard>
 
     <UCard>
       <PaginationBar

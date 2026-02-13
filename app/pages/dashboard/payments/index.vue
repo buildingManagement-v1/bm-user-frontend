@@ -12,7 +12,40 @@ const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
 const currentPage = ref(1)
+const filterType = ref<string>('')
+const filterStatus = ref<string>('')
+const searchQ = ref('')
 const isCreateModalOpen = ref(false)
+
+const typeOptions = [
+  { value: '', label: 'All types' },
+  { value: 'rent', label: 'Rent' },
+  { value: 'utility', label: 'Utility' },
+  { value: 'deposit', label: 'Deposit' },
+  { value: 'other', label: 'Other' },
+]
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
+
+const selectedTypeOption = computed({
+  get: () => typeOptions.find(o => o.value === filterType.value) ?? typeOptions[0],
+  set: (v: { value: string } | undefined) => {
+    filterType.value = v?.value ?? ''
+    onFilterChange()
+  },
+})
+const selectedStatusOption = computed({
+  get: () => statusOptions.find(o => o.value === filterStatus.value) ?? statusOptions[0],
+  set: (v: { value: string } | undefined) => {
+    filterStatus.value = v?.value ?? ''
+    onFilterChange()
+  },
+})
 
 const columns: TableColumn<Payment>[] = [
   { accessorKey: 'tenant', header: 'Tenant' },
@@ -30,9 +63,15 @@ async function fetchPayments() {
   loading.value = true
   try {
     const offset = (currentPage.value - 1) * limit.value
+    const params = new URLSearchParams()
+    params.set('limit', String(limit.value))
+    params.set('offset', String(offset))
+    if (filterType.value) params.set('type', filterType.value)
+    if (filterStatus.value) params.set('status', filterStatus.value)
+    if (searchQ.value.trim()) params.set('q', searchQ.value.trim())
     const response = await buildingApi<PaginatedResponse<Payment[]>>(
       selectedBuildingId.value,
-      `/v1/app/payments?limit=${limit.value}&offset=${offset}`
+      `/v1/app/payments?${params.toString()}`
     )
     payments.value = response.data
     pageInfo.value = response.meta.page_info
@@ -51,6 +90,11 @@ function goToPage(page: number) {
 
 function onLimitChange(newLimit: number) {
   limit.value = newLimit
+  currentPage.value = 1
+  fetchPayments()
+}
+
+function onFilterChange() {
   currentPage.value = 1
   fetchPayments()
 }
@@ -114,6 +158,24 @@ watch(selectedBuildingId, () => {
         </UButton>
       </div>
     </div>
+
+    <UCard v-if="selectedBuildingId" class="mb-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Type</span>
+          <USelectMenu v-model="selectedTypeOption" :items="typeOptions" class="w-40" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Status</span>
+          <USelectMenu v-model="selectedStatusOption" :items="statusOptions" class="w-40" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Tenant name</span>
+          <UInput v-model="searchQ" placeholder="Search..." class="w-48" @keyup.enter="onFilterChange" />
+          <UButton size="sm" color="neutral" variant="outline" @click="onFilterChange">Search</UButton>
+        </div>
+      </div>
+    </UCard>
 
     <UCard>
       <PaginationBar

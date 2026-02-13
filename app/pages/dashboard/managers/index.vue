@@ -11,6 +11,22 @@ const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
 const currentPage = ref(1)
+const filterStatus = ref<string>('')
+const searchQ = ref('')
+
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
+
+const selectedStatusOption = computed({
+  get: () => statusOptions.find(o => o.value === filterStatus.value) ?? statusOptions[0],
+  set: (v: { value: string } | undefined) => {
+    filterStatus.value = v?.value ?? ''
+    onFilterChange()
+  },
+})
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const selectedManager = ref<Manager | null>(null)
@@ -28,8 +44,13 @@ async function fetchManagers() {
   loading.value = true
   try {
     const offset = (currentPage.value - 1) * limit.value
+    const params = new URLSearchParams()
+    params.set('limit', String(limit.value))
+    params.set('offset', String(offset))
+    if (filterStatus.value) params.set('status', filterStatus.value)
+    if (searchQ.value.trim()) params.set('q', searchQ.value.trim())
     const response = await api<PaginatedResponse<Manager[]>>(
-      `/v1/app/managers?limit=${limit.value}&offset=${offset}`
+      `/v1/app/managers?${params.toString()}`
     )
     managers.value = response.data
     pageInfo.value = response.meta.page_info
@@ -48,6 +69,11 @@ function goToPage(page: number) {
 
 function onLimitChange(newLimit: number) {
   limit.value = newLimit
+  currentPage.value = 1
+  fetchManagers()
+}
+
+function onFilterChange() {
   currentPage.value = 1
   fetchManagers()
 }
@@ -93,6 +119,20 @@ onMounted(() => {
         Add Manager
       </UButton>
     </div>
+
+    <UCard class="mb-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Status</span>
+          <USelectMenu v-model="selectedStatusOption" :items="statusOptions" class="w-40" />
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">Name or email</span>
+          <UInput v-model="searchQ" placeholder="Search..." class="w-48" @keyup.enter="onFilterChange" />
+          <UButton size="sm" color="neutral" variant="outline" @click="onFilterChange">Search</UButton>
+        </div>
+      </div>
+    </UCard>
 
     <UCard>
       <PaginationBar
