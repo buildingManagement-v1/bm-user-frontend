@@ -3,7 +3,7 @@ import type { TableColumn } from '@nuxt/ui'
 import type { Tenant } from '~/types/tenant'
 import type { Building } from '~/types/building'
 import type { Lease } from '~/types/lease'
-import type { ApiResponse } from '~/types'
+import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 type TenantWithUnit = Tenant & {
   activeUnit?: {
@@ -21,6 +21,9 @@ const buildings = ref<Building[]>([])
 const tenantLeases = ref<Lease[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 const loadingBuildings = ref(false)
 const loadingLeases = ref(false)
 const isCreateModalOpen = ref(false)
@@ -91,15 +94,16 @@ async function fetchTenants() {
 
   loading.value = true
   try {
-    const response = await buildingApi<ApiResponse<Tenant[]>>(
+    const offset = (currentPage.value - 1) * limit.value
+    const response = await buildingApi<PaginatedResponse<Tenant[]>>(
       selectedBuildingId.value,
-      '/v1/app/tenants'
+      `/v1/app/tenants?limit=${limit.value}&offset=${offset}`
     )
-    // Fetch leases for each tenant
+    pageInfo.value = response.meta.page_info
     const tenantsWithLeases = await Promise.all(
       response.data.map(async (tenant) => {
         try {
-          const leasesResponse = await buildingApi<ApiResponse<any[]>>(
+          const leasesResponse = await buildingApi<ApiResponse<Lease[]>>(
             selectedBuildingId.value!,
             `/v1/app/leases/tenant/${tenant.id}`
           )
@@ -115,6 +119,12 @@ async function fetchTenants() {
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchTenants()
 }
 
 async function fetchTenantLeases(tenantId: string) {
@@ -212,6 +222,7 @@ function formatDate(dateString: string) {
 
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
+    currentPage.value = 1
     fetchTenants()
   }
 })
@@ -240,6 +251,12 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="tenants"
+        :current-count="tenants.length"
+        @go-to-page="goToPage"
+      />
       <UTable :data="tenantsWithUnits" :columns="columns" :loading="loading">
         <template #phone-cell="{ row }">
           <span v-if="row.original.phone">{{ row.original.phone }}</span>
