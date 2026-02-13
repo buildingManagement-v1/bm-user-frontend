@@ -134,28 +134,6 @@ async function fetchTenantLeases(tenantId: string) {
   }
 }
 
-async function terminateLease(lease: Lease) {
-  if (!confirm(`Are you sure you want to terminate the lease for ${lease.unit.unitNumber}?`)) return
-  if (!selectedBuildingId.value) return
-
-  try {
-    await buildingApi(
-      selectedBuildingId.value,
-      `/v1/app/leases/${lease.id}`,
-      {
-        method: 'PATCH',
-        body: { status: 'terminated' }
-      }
-    )
-    toast.add({ title: 'Lease terminated successfully', color: 'success' })
-    if (selectedTenant.value) {
-      fetchTenantLeases(selectedTenant.value.id)
-    }
-  } catch (error: any) {
-    toast.add({ title: 'Failed to terminate lease', description: error.message || '', color: 'error' })
-  }
-}
-
 function openEditModal(tenant: Tenant) {
   selectedTenant.value = tenant
   isEditModalOpen.value = true
@@ -222,6 +200,7 @@ function handleSuccess() {
 function handleLeaseSuccess() {
   isLeaseFormModalOpen.value = false
   selectedLease.value = null
+  fetchTenants()
   if (selectedTenant.value) {
     fetchTenantLeases(selectedTenant.value.id)
   }
@@ -376,10 +355,6 @@ onMounted(() => {
                 <UButton v-if="row.original.status !== 'terminated'" size="xs" color="neutral" variant="ghost"
                   @click="openEditLeaseModal(row.original)">
                   Edit
-                </UButton>
-                <UButton v-if="row.original.status === 'active'" size="xs" color="error" variant="soft"
-                  @click="terminateLease(row.original)">
-                  Terminate
                 </UButton>
                 <UButton size="xs" color="error" variant="ghost" @click="deleteLease(row.original.id)">
                   Delete

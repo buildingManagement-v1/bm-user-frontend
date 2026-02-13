@@ -108,7 +108,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTenantSchema | UpdateTenant
     </UFormField>
 
     <UFormField v-if="mode === 'create'" label="Password" name="password" required>
-      <UInput v-model="(state as CreateTenantSchema).password" type="password" placeholder="Enter password"
+      <UInput v-model="(state as CreateTenantSchema).password" type="text" placeholder="Enter password"
         :ui="{ root: 'w-full' }" />
     </UFormField>
 

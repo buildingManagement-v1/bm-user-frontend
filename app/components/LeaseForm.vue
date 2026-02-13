@@ -41,17 +41,20 @@ const state = reactive<{
 const loading = ref(false)
 const loadingUnits = ref(false)
 const units = ref<Unit[]>([])
+const showTerminateConfirm = ref(false)
+const terminateConfirmText = ref('')
+const terminating = ref(false)
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
   { value: 'expired', label: 'Expired' },
-  { value: 'terminated', label: 'Terminated' },
 ]
 
 const unitOptions = computed(() =>
   units.value.map(u => ({
     value: u.id,
-    label: `${u.unitNumber}${u.floor ? ` - Floor ${u.floor}` : ''}`,
+    label: `${u.unitNumber}${u.floor ? ` - Floor ${u.floor}` : ''}${u.status === 'occupied' ? ' (Occupied)' : ''}`,
+    disabled: u.status === 'occupied'
   }))
 )
 
@@ -59,6 +62,11 @@ const selectedUnit = computed({
   get: () => unitOptions.value.find(u => u.value === state.unitId),
   set: (val: { value: string; label: string } | undefined) => {
     state.unitId = val?.value || ''
+
+    const unit = units.value.find(u => u.id === val?.value)
+    if (unit?.rentPrice && props.mode === 'create') {
+      state.rentAmount = unit.rentPrice
+    }
   }
 })
 
@@ -84,6 +92,23 @@ async function fetchUnits() {
   }
 }
 
+function sanitizeOptionalNumber(body: Record<string, unknown>, key: string) {
+  const v = body[key]
+  if (v === '' || v === undefined) delete body[key]
+}
+
+function buildCreateBody(data: CreateLeaseSchema) {
+  const body: Record<string, unknown> = { ...data }
+  sanitizeOptionalNumber(body, 'securityDeposit')
+  return body
+}
+
+function buildUpdateBody(data: Omit<CreateLeaseSchema, 'tenantId' | 'unitId'>) {
+  const body: Record<string, unknown> = { ...data, status: data.status }
+  sanitizeOptionalNumber(body, 'securityDeposit')
+  return body
+}
+
 async function onSubmit(event: FormSubmitEvent<CreateLeaseSchema>) {
   loading.value = true
   try {
@@ -93,19 +118,16 @@ async function onSubmit(event: FormSubmitEvent<CreateLeaseSchema>) {
         '/v1/app/leases',
         {
           method: 'POST',
-          body: event.data,
+          body: buildCreateBody(event.data),
         }
       )
       toast.add({ title: 'Lease created successfully', color: 'success' })
     } else {
-      const { tenantId, unitId, status, ...updateData } = event.data
+      const { tenantId, unitId, ...updateData } = event.data
       await buildingApi<ApiResponse<Lease>>(
         props.buildingId,
         `/v1/app/leases/${props.lease!.id}`,
-        {
-          method: 'PATCH',
-          body: updateData,
-        }
+        { method: 'PATCH', body: buildUpdateBody(updateData) }
       )
       toast.add({ title: 'Lease updated successfully', color: 'success' })
     }
@@ -119,6 +141,31 @@ async function onSubmit(event: FormSubmitEvent<CreateLeaseSchema>) {
   } finally {
     loading.value = false
   }
+}
+
+async function confirmTerminate() {
+  if (terminateConfirmText.value.toLowerCase() !== 'terminate' || !props.lease || !props.buildingId) return
+  terminating.value = true
+  try {
+    await buildingApi<ApiResponse<Lease>>(
+      props.buildingId,
+      `/v1/app/leases/${props.lease.id}`,
+      { method: 'PATCH', body: { status: 'terminated' } }
+    )
+    toast.add({ title: 'Lease terminated successfully', color: 'success' })
+    showTerminateConfirm.value = false
+    terminateConfirmText.value = ''
+    emit('success')
+  } catch (error: any) {
+    toast.add({ title: 'Failed to terminate lease', description: error.message || '', color: 'error' })
+  } finally {
+    terminating.value = false
+  }
+}
+
+function cancelTerminate() {
+  showTerminateConfirm.value = false
+  terminateConfirmText.value = ''
 }
 
 onMounted(() => {
@@ -151,6 +198,30 @@ onMounted(() => {
       <UFormField label="Security Deposit" name="securityDeposit">
         <UInput v-model.number="state.securityDeposit" type="number" placeholder="0.00" :ui="{ root: 'w-full' }" />
       </UFormField>
+    </div>
+
+    <UFormField v-if="mode === 'edit'" label="Status" name="status">
+      <USelectMenu v-model="selectedStatus" :items="statusOptions" placeholder="Select status" class="w-full" />
+    </UFormField>
+
+    <!-- Terminate (edit mode, active lease only) -->
+    <div v-if="mode === 'edit' && lease?.status === 'active' && !showTerminateConfirm"
+      class="pt-2 border-t border-gray-200">
+      <UButton type="button" color="error" variant="soft" size="sm" @click="showTerminateConfirm = true">
+        Terminate lease
+      </UButton>
+    </div>
+    <div v-else-if="mode === 'edit' && lease?.status === 'active' && showTerminateConfirm"
+      class="pt-2 border-t border-gray-200 space-y-2">
+      <p class="text-sm text-gray-600">Type <strong>terminate</strong> below to confirm.</p>
+      <UInput v-model="terminateConfirmText" placeholder="terminate" class="w-full" />
+      <div class="flex gap-2">
+        <UButton type="button" color="neutral" variant="ghost" size="sm" @click="cancelTerminate">Cancel</UButton>
+        <UButton type="button" color="error" size="sm" :disabled="terminateConfirmText.toLowerCase() !== 'terminate'"
+          :loading="terminating" @click="confirmTerminate">
+          Confirm terminate
+        </UButton>
+      </div>
     </div>
 
     <div class="flex gap-2 justify-end pt-4">
