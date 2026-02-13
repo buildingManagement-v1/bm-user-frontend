@@ -11,7 +11,26 @@ const { buildingApi } = useApi()
 const toast = useToast()
 
 const calendar = ref<PaymentCalendar[]>([])
+const selectedLeaseId = ref<string | null>(null)
 const loading = ref(false)
+
+const unitOptions = computed(() =>
+  calendar.value.map((lease) => ({
+    value: lease.leaseId,
+    label: lease.unitFloor != null ? `Unit ${lease.unitNumber} (Floor ${lease.unitFloor})` : `Unit ${lease.unitNumber}`,
+  }))
+)
+
+const selectedLease = computed(() =>
+  calendar.value.find((l) => l.leaseId === selectedLeaseId.value) ?? calendar.value[0] ?? null
+)
+
+const selectedOption = computed({
+  get: () => unitOptions.value.find((o) => o.value === selectedLeaseId.value),
+  set: (opt) => {
+    selectedLeaseId.value = opt?.value ?? null
+  },
+})
 
 const statusColors: Record<PaymentPeriodStatus, string> = {
   paid: 'bg-green-100 text-green-800 border-green-300',
@@ -27,6 +46,7 @@ async function fetchCalendar() {
       `/v1/app/payments/calendar/${props.tenantId}`
     )
     calendar.value = response.data
+    selectedLeaseId.value = response.data[0]?.leaseId ?? null
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch payment calendar', description: error.message, color: 'error' })
   } finally {
@@ -37,7 +57,7 @@ async function fetchCalendar() {
 function formatMonth(monthStr: string) {
   return new Date(monthStr + '-01').toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'short'
+    month: 'short',
   })
 }
 
@@ -56,39 +76,54 @@ onMounted(() => {
       No active lease found
     </div>
 
-    <div v-else v-for="lease in calendar" :key="lease.leaseId" class="space-y-3">
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-gray-600">Lease Period: {{ new Date(lease.startDate).toLocaleDateString() }} - {{ new
-          Date(lease.endDate).toLocaleDateString() }}</span>
-        <span class="font-medium">${{ lease.rentAmount.toLocaleString() }}/month</span>
+    <template v-else>
+      <div class="flex items-center gap-2">
+        <span class="text-sm text-gray-600">Unit:</span>
+        <USelectMenu
+          v-model="selectedOption"
+          :items="unitOptions"
+          placeholder="Select unit"
+          class="min-w-[200px]"
+        />
       </div>
 
-      <div class="grid grid-cols-6 gap-2">
-        <div v-for="period in lease.periods" :key="period.id" :class="[
-          'p-3 rounded-lg border text-center text-xs font-medium',
-          statusColors[period.status]
-        ]">
-          <div>{{ formatMonth(period.month) }}</div>
-          <div v-if="period.paidAt" class="text-[10px] mt-1 opacity-75">
-            {{ new Date(period.paidAt).toLocaleDateString() }}
+      <div v-if="selectedLease" class="space-y-3">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-600">
+            Lease: {{ new Date(selectedLease.startDate).toLocaleDateString() }} –
+            {{ new Date(selectedLease.endDate).toLocaleDateString() }}
+          </span>
+          <span class="font-medium">${{ selectedLease.rentAmount.toLocaleString() }}/month</span>
+        </div>
+
+        <div class="grid grid-cols-6 gap-2">
+          <div
+            v-for="period in selectedLease.periods"
+            :key="period.id"
+            :class="['p-3 rounded-lg border text-center text-xs font-medium', statusColors[period.status]]"
+          >
+            <div>{{ formatMonth(period.month) }}</div>
+            <div v-if="period.paidAt" class="text-[10px] mt-1 opacity-75">
+              {{ new Date(period.paidAt).toLocaleDateString() }}
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 text-xs">
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded bg-green-100 border border-green-300" />
+            <span>Paid</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded bg-gray-100 border border-gray-300" />
+            <span>Unpaid</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded bg-red-100 border border-red-300" />
+            <span>Overdue</span>
           </div>
         </div>
       </div>
-
-      <div class="flex gap-4 text-xs">
-        <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
-          <span>Paid</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded bg-gray-100 border border-gray-300"></div>
-          <span>Unpaid</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded bg-red-100 border border-red-300"></div>
-          <span>Overdue</span>
-        </div>
-      </div>
-    </div>
+    </template>
   </div>
 </template>

@@ -112,6 +112,9 @@ export interface Invoice {
 
 export interface PaymentCalendar {
   leaseId: string;
+  unitId: string;
+  unitNumber: string;
+  unitFloor?: number;
   startDate: string;
   endDate: string;
   rentAmount: number;
