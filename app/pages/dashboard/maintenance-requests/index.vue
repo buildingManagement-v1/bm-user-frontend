@@ -2,7 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { MaintenanceRequest } from '~/types/maintenance-request'
 import type { Building } from '~/types/building'
-import type { ApiResponse } from '~/types'
+import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
@@ -11,6 +11,9 @@ const requests = ref<MaintenanceRequest[]>([])
 const buildings = ref<Building[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 const loadingBuildings = ref(false)
 const deletingId = ref<string | null>(null)
 const isCreateModalOpen = ref(false)
@@ -61,16 +64,30 @@ async function fetchRequests() {
 
   loading.value = true
   try {
-    const response = await buildingApi<ApiResponse<MaintenanceRequest[]>>(
+    const offset = (currentPage.value - 1) * limit.value
+    const response = await buildingApi<PaginatedResponse<MaintenanceRequest[]>>(
       selectedBuildingId.value,
-      '/v1/app/maintenance-requests'
+      `/v1/app/maintenance-requests?limit=${limit.value}&offset=${offset}`
     )
     requests.value = response.data
+    pageInfo.value = response.meta.page_info
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch requests', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchRequests()
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchRequests()
 }
 
 function openViewModal(request: MaintenanceRequest) {
@@ -118,6 +135,7 @@ function handleSuccess() {
 
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
+    currentPage.value = 1
     fetchRequests()
   }
 })
@@ -146,6 +164,15 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="requests"
+        :current-count="requests.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
       <UTable :data="requests" :columns="columns" :loading="loading">
         <template #tenant-cell="{ row }">
           <span>{{ row.original.tenant.name }}</span>

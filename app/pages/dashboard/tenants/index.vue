@@ -127,6 +127,12 @@ function goToPage(page: number) {
   fetchTenants()
 }
 
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchTenants()
+}
+
 async function fetchTenantLeases(tenantId: string) {
   if (!selectedBuildingId.value) return
 
@@ -255,7 +261,10 @@ onMounted(() => {
         :page-info="pageInfo"
         item-label="tenants"
         :current-count="tenants.length"
+        :limit="limit"
+        show-limit-selector
         @go-to-page="goToPage"
+        @update:limit="onLimitChange"
       />
       <UTable :data="tenantsWithUnits" :columns="columns" :loading="loading">
         <template #phone-cell="{ row }">

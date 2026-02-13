@@ -2,7 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { Payment } from '~/types/payment'
 import type { Building } from '~/types/building'
-import type { ApiResponse } from '~/types'
+import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
@@ -11,6 +11,9 @@ const payments = ref<Payment[]>([])
 const buildings = ref<Building[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 const loadingBuildings = ref(false)
 const isCreateModalOpen = ref(false)
 
@@ -55,16 +58,30 @@ async function fetchPayments() {
 
   loading.value = true
   try {
-    const response = await buildingApi<ApiResponse<Payment[]>>(
+    const offset = (currentPage.value - 1) * limit.value
+    const response = await buildingApi<PaginatedResponse<Payment[]>>(
       selectedBuildingId.value,
-      '/v1/app/payments'
+      `/v1/app/payments?limit=${limit.value}&offset=${offset}`
     )
     payments.value = response.data
+    pageInfo.value = response.meta.page_info
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch payments', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchPayments()
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchPayments()
 }
 
 function formatDate(dateString: string) {
@@ -103,6 +120,7 @@ async function downloadReceipt(invoiceId: string) {
 
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
+    currentPage.value = 1
     fetchPayments()
   }
 })
@@ -131,6 +149,15 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="payments"
+        :current-count="payments.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
       <UTable :data="payments" :columns="columns" :loading="loading">
         <template #tenant-cell="{ row }">
           <span>{{ row.original.tenant.name }}</span>

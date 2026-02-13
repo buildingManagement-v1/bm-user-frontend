@@ -80,6 +80,12 @@ function goToPage(page: number) {
   fetchUnits()
 }
 
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchUnits()
+}
+
 function openEditModal(unit: Unit) {
   selectedUnit.value = unit
   isEditModalOpen.value = true
@@ -140,7 +146,10 @@ onMounted(() => {
         :page-info="pageInfo"
         item-label="units"
         :current-count="units.length"
+        :limit="limit"
+        show-limit-selector
         @go-to-page="goToPage"
+        @update:limit="onLimitChange"
       />
       <UTable :data="units" :columns="columns" :loading="loading">
         <template #floor-cell="{ row }">
