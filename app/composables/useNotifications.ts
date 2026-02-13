@@ -17,7 +17,7 @@ export const useNotifications = () => {
       const response = await api<NotificationsResponse>("/v1/notifications", {
         params: { page, limit },
       });
-      notifications.value = response.data;
+      notifications.value = response.data ?? [];
       return response;
     } finally {
       loading.value = false;

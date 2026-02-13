@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import type { Manager } from '~/types/manager'
-import type { ApiResponse } from '~/types'
+import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api } = useApi()
 const toast = useToast()
 
 const managers = ref<Manager[]>([])
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
 const selectedManager = ref<Manager | null>(null)
@@ -24,13 +27,29 @@ const columns: TableColumn<Manager>[] = [
 async function fetchManagers() {
   loading.value = true
   try {
-    const response = await api<ApiResponse<Manager[]>>('/v1/app/managers')
+    const offset = (currentPage.value - 1) * limit.value
+    const response = await api<PaginatedResponse<Manager[]>>(
+      `/v1/app/managers?limit=${limit.value}&offset=${offset}`
+    )
     managers.value = response.data
+    pageInfo.value = response.meta.page_info
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch managers', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchManagers()
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchManagers()
 }
 
 function openEditModal(manager: Manager) {
@@ -76,6 +95,15 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="managers"
+        :current-count="managers.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
       <UTable :data="managers" :columns="columns" :loading="loading">
         <template #phone-cell="{ row }">
           <span v-if="row.original.phone">{{ row.original.phone }}</span>

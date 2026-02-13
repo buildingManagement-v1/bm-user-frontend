@@ -11,12 +11,12 @@ export interface Notification {
   updatedAt: string;
 }
 
+import type { PageInfo } from './api';
+
 export interface NotificationsResponse {
+  success?: boolean;
   data: Notification[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  meta?: { page_info: PageInfo };
 }
 
 export interface UnreadCountResponse {

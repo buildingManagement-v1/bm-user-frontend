@@ -11,8 +11,9 @@ const totalPages = ref(1)
 
 async function loadNotifications(page = 1) {
   const response = await fetchNotifications(page, 20)
-  currentPage.value = response.page
-  totalPages.value = response.totalPages
+  const info = response.meta?.page_info
+  currentPage.value = info?.current_page ?? page
+  totalPages.value = info?.total_pages ?? 1
 }
 
 function getTimeAgo(date: string) {

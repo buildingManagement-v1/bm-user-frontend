@@ -2,7 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { Invoice } from '~/types/payment'
 import type { Building } from '~/types/building'
-import type { ApiResponse } from '~/types'
+import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
@@ -11,6 +11,9 @@ const invoices = ref<Invoice[]>([])
 const buildings = ref<Building[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 const loadingBuildings = ref(false)
 const isDetailModalOpen = ref(false)
 const selectedInvoice = ref<Invoice | null>(null)
@@ -56,16 +59,30 @@ async function fetchInvoices() {
 
   loading.value = true
   try {
-    const response = await buildingApi<ApiResponse<Invoice[]>>(
+    const offset = (currentPage.value - 1) * limit.value
+    const response = await buildingApi<PaginatedResponse<Invoice[]>>(
       selectedBuildingId.value,
-      '/v1/app/invoices'
+      `/v1/app/invoices?limit=${limit.value}&offset=${offset}`
     )
     invoices.value = response.data
+    pageInfo.value = response.meta.page_info
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch invoices', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchInvoices()
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchInvoices()
 }
 
 async function downloadInvoice(invoiceId: string) {
@@ -104,6 +121,7 @@ function formatDate(dateString: string) {
 
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
+    currentPage.value = 1
     fetchInvoices()
   }
 })
@@ -128,6 +146,15 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="invoices"
+        :current-count="invoices.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
       <UTable :data="invoices" :columns="columns" :loading="loading">
         <template #invoiceNumber-cell="{ row }">
           <span class="font-medium">{{ row.original.invoiceNumber }}</span>

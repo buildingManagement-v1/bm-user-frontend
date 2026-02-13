@@ -2,7 +2,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { ActivityLog, ActivityAction, ActivityEntityType } from '~/types/activity-log'
 import type { Building } from '~/types/building'
-import type { ApiResponse } from '~/types'
+import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
@@ -11,6 +11,9 @@ const logs = ref<ActivityLog[]>([])
 const buildings = ref<Building[]>([])
 const selectedBuildingId = ref<string>('')
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 const loadingBuildings = ref(false)
 
 const startDate = ref('')
@@ -95,17 +98,33 @@ async function fetchLogs() {
     if (endDate.value) params.append('endDate', endDate.value)
     if (selectedEntityType.value) params.append('entityType', selectedEntityType.value)
     if (selectedAction.value) params.append('action', selectedAction.value)
+    const offset = (currentPage.value - 1) * limit.value
+    params.append('limit', String(limit.value))
+    params.append('offset', String(offset))
 
-    const response = await buildingApi<ApiResponse<ActivityLog[]>>(
+    const response = await buildingApi<PaginatedResponse<ActivityLog[]>>(
       selectedBuildingId.value,
       `/v1/app/activity-logs?${params.toString()}`
     )
     logs.value = response.data
+    pageInfo.value = response.meta.page_info
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch activity logs', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchLogs()
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchLogs()
 }
 
 function formatDate(dateString: string) {
@@ -170,6 +189,7 @@ function getActionColor(action: string) {
 
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
+    currentPage.value = 1
     fetchLogs()
   }
 })
@@ -220,6 +240,15 @@ onMounted(() => {
     </UCard>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="logs"
+        :current-count="logs.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
       <UTable :data="logs" :columns="columns" :loading="loading">
         <template #createdAt-cell="{ row }">
           <span class="text-sm">{{ formatDate(row.original.createdAt) }}</span>
