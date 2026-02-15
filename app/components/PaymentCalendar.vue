@@ -93,7 +93,7 @@ onMounted(() => {
             Lease: {{ new Date(selectedLease.startDate).toLocaleDateString() }} –
             {{ new Date(selectedLease.endDate).toLocaleDateString() }}
           </span>
-          <span class="font-medium">${{ selectedLease.rentAmount.toLocaleString() }}/month</span>
+          <span class="font-medium">ETB {{ selectedLease.rentAmount.toLocaleString() }}/month</span>
         </div>
 
         <div class="grid grid-cols-6 gap-2">

@@ -38,7 +38,7 @@ const unitOptions = computed(() =>
     .filter(u => u.status === 'vacant')
     .map(u => ({
       value: u.id,
-      label: `${u.unitNumber}${u.floor ? ` - Floor ${u.floor}` : ''} - $${u.rentPrice}`,
+      label: `${u.unitNumber}${u.floor ? ` - Floor ${u.floor}` : ''} - ETB ${u.rentPrice}`,
     }))
 )
 
@@ -158,7 +158,7 @@ onMounted(() => {
           <UInput v-model.number="state.rentAmount" type="number" min="0" step="0.01" placeholder="0.00"
             :ui="{ root: 'w-full' }">
             <template #leading>
-              <span class="text-gray-500 dark:text-gray-400">$</span>
+              <span class="text-gray-500 dark:text-gray-400">ETB</span>
             </template>
           </UInput>
         </UFormField>
@@ -167,7 +167,7 @@ onMounted(() => {
           <UInput v-model.number="state.securityDeposit" type="number" min="0" step="0.01" placeholder="0.00"
             :ui="{ root: 'w-full' }">
             <template #leading>
-              <span class="text-gray-500 dark:text-gray-400">$</span>
+              <span class="text-gray-500 dark:text-gray-400">ETB</span>
             </template>
           </UInput>
         </UFormField>

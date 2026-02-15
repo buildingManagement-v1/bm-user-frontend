@@ -7,7 +7,7 @@ const { api, buildingApi } = useApi()
 const toast = useToast()
 
 const invoices = ref<Invoice[]>([])
-const selectedBuildingId = ref<string>('')
+const { selectedBuildingId } = useSelectedBuilding()
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
@@ -124,7 +124,7 @@ watch(selectedBuildingId, () => {
     currentPage.value = 1
     fetchInvoices()
   }
-})
+}, { immediate: true })
 
 </script>
 
@@ -185,7 +185,7 @@ watch(selectedBuildingId, () => {
         </template>
 
         <template #amount-cell="{ row }">
-          <span class="font-medium">${{ row.original.amount.toLocaleString() }}</span>
+          <span class="font-medium">ETB {{ row.original.amount.toLocaleString() }}</span>
         </template>
 
         <template #dueDate-cell="{ row }">
@@ -264,14 +264,14 @@ watch(selectedBuildingId, () => {
               <div v-for="(item, index) in selectedInvoice.items" :key="index"
                 class="flex justify-between items-center bg-gray-50 p-3 rounded">
                 <span>{{ item.description }}</span>
-                <span class="font-medium">${{ item.amount.toLocaleString() }}</span>
+                <span class="font-medium">ETB {{ item.amount.toLocaleString() }}</span>
               </div>
             </div>
           </div>
 
           <div class="flex justify-between items-center pt-4 border-t">
             <span class="text-lg font-medium">Total Amount</span>
-            <span class="text-2xl font-bold text-primary-600">${{ selectedInvoice.amount.toLocaleString() }}</span>
+            <span class="text-2xl font-bold text-primary-600">ETB {{ selectedInvoice.amount.toLocaleString() }}</span>
           </div>
 
           <div class="grid grid-cols-2 gap-4 text-sm">

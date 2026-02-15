@@ -17,7 +17,7 @@ const toast = useToast()
 
 const tenants = ref<Tenant[]>([])
 const tenantLeases = ref<Lease[]>([])
-const selectedBuildingId = ref<string>('')
+const { selectedBuildingId } = useSelectedBuilding()
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
@@ -228,7 +228,7 @@ watch(selectedBuildingId, () => {
     currentPage.value = 1
     fetchTenants()
   }
-})
+}, { immediate: true })
 
 </script>
 
@@ -364,7 +364,7 @@ watch(selectedBuildingId, () => {
             </template>
 
             <template #rentAmount-cell="{ row }">
-              <span>${{ row.original.rentAmount.toLocaleString() }}</span>
+              <span>ETB {{ row.original.rentAmount.toLocaleString() }}</span>
             </template>
 
             <template #startDate-cell="{ row }">

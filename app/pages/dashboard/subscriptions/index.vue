@@ -177,7 +177,7 @@ onMounted(() => {
         <div class="space-y-6">
           <div class="flex items-baseline gap-2">
             <span class="text-3xl font-bold text-gray-900">{{ subscription.plan?.name || 'N/A' }}</span>
-            <span class="text-2xl font-semibold text-gray-900">${{ subscription.totalAmount }}</span>
+            <span class="text-2xl font-semibold text-gray-900">ETB {{ subscription.totalAmount }}</span>
             <span class="text-gray-600">/year</span>
           </div>
 

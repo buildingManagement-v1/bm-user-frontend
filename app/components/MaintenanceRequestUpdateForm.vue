@@ -53,15 +53,15 @@ async function submit() {
 </script>
 
 <template>
-  <form @submit.prevent="submit" class="space-y-4">
-    <div>
+  <form @submit.prevent="submit" class="w-full space-y-4">
+    <div class="w-full">
       <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-      <USelectMenu v-model="selectedStatus" :items="statusOptions" placeholder="Select status" />
+      <USelectMenu v-model="selectedStatus" :items="statusOptions" placeholder="Select status" class="w-full" :ui="{ root: 'w-full' }" />
     </div>
 
-    <div>
+    <div class="w-full">
       <label class="block text-sm font-medium text-gray-700 mb-2">Add Note (optional)</label>
-      <UTextarea v-model="note" placeholder="Add a note about this update..." :rows="3" />
+      <UTextarea v-model="note" placeholder="Add a note about this update..." :rows="4" class="w-full" :ui="{ root: 'w-full' }" />
     </div>
 
     <div class="flex justify-end gap-3">

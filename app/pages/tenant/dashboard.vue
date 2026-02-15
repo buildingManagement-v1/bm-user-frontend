@@ -124,7 +124,7 @@ onMounted(() => {
         <div v-else-if="rentStatus" class="space-y-3">
           <div>
             <p class="text-sm text-gray-500">Monthly Rent</p>
-            <p class="text-2xl font-bold text-primary-600">${{ rentStatus.rentAmount }}</p>
+            <p class="text-2xl font-bold text-primary-600">ETB {{ rentStatus.rentAmount }}</p>
           </div>
           <div>
             <p class="text-sm text-gray-500">Lease Period</p>

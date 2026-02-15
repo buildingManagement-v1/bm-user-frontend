@@ -116,6 +116,8 @@ export const useAuth = () => {
     user.value = null;
     userCookie.value = null;
     userType.value = null;
+    const selectedBuildingId = useCookie<string>("selectedBuildingId");
+    selectedBuildingId.value = "";
     router.push("/login");
   };
 

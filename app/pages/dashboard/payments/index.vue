@@ -7,7 +7,7 @@ const { api, buildingApi } = useApi()
 const toast = useToast()
 
 const payments = ref<Payment[]>([])
-const selectedBuildingId = ref<string>('')
+const { selectedBuildingId } = useSelectedBuilding()
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
@@ -138,7 +138,7 @@ watch(selectedBuildingId, () => {
     currentPage.value = 1
     fetchPayments()
   }
-})
+}, { immediate: true })
 
 </script>
 
@@ -203,7 +203,7 @@ watch(selectedBuildingId, () => {
         </template>
 
         <template #amount-cell="{ row }">
-          <span class="font-medium">${{ row.original.amount.toLocaleString() }}</span>
+          <span class="font-medium">ETB {{ row.original.amount.toLocaleString() }}</span>
         </template>
 
         <template #type-cell="{ row }">

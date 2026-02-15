@@ -234,7 +234,7 @@ function goToRegister() {
             <div class="mb-6">
               <h3 class="text-2xl font-bold text-gray-900 mb-2">Free</h3>
               <div class="flex items-baseline gap-1">
-                <span class="text-5xl font-bold text-gray-900">$0</span>
+                <span class="text-5xl font-bold text-gray-900">ETB 0</span>
                 <span class="text-gray-600">/year</span>
               </div>
             </div>
@@ -271,7 +271,7 @@ function goToRegister() {
             <div class="mb-6">
               <h3 class="text-2xl font-bold text-white mb-2">Pro</h3>
               <div class="flex items-baseline gap-1">
-                <span class="text-5xl font-bold text-white">$499</span>
+                <span class="text-5xl font-bold text-white">ETB 499</span>
                 <span class="text-primary-100">/year</span>
               </div>
             </div>
@@ -304,7 +304,7 @@ function goToRegister() {
             <div class="mb-6">
               <h3 class="text-2xl font-bold text-gray-900 mb-2">Enterprise</h3>
               <div class="flex items-baseline gap-1">
-                <span class="text-5xl font-bold text-gray-900">$1,999</span>
+                <span class="text-5xl font-bold text-gray-900">ETB 1,999</span>
                 <span class="text-gray-600">/year</span>
               </div>
             </div>

@@ -123,7 +123,7 @@ onMounted(() => {
         <div><span class="font-medium">Plan:</span> {{ subscription.plan?.name }}</div>
         <div><span class="font-medium">Buildings:</span> {{ subscription.buildingCount }}</div>
         <div><span class="font-medium">Managers:</span> {{ subscription.managerCount }}</div>
-        <div><span class="font-medium">Current Cost:</span> ${{ subscription.totalAmount }}/year</div>
+        <div><span class="font-medium">Current Cost:</span> ETB {{ subscription.totalAmount }}/year</div>
       </div>
     </div>
 
@@ -166,22 +166,22 @@ onMounted(() => {
         </div>
         <div class="flex justify-between">
           <span class="text-gray-600">Current Plan (Unused):</span>
-          <span class="font-medium text-green-600">-${{ prorating.oldUnused }}</span>
+          <span class="font-medium text-green-600">-ETB {{ prorating.oldUnused }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-gray-600">New Plan (Remaining Time):</span>
-          <span class="font-medium">+${{ prorating.newCost }}</span>
+          <span class="font-medium">+ETB {{ prorating.newCost }}</span>
         </div>
         <div class="border-t pt-2 flex justify-between">
           <span class="font-semibold text-gray-900">
             {{ isDowngrade ? 'Refund Amount:' : 'Amount to Charge:' }}
           </span>
           <span class="text-xl font-bold" :class="isDowngrade ? 'text-green-600' : 'text-blue-600'">
-            ${{ Math.abs(prorating.proratedAmount) }}
+            ETB {{ Math.abs(prorating.proratedAmount) }}
           </span>
         </div>
         <div class="text-xs text-gray-500 mt-2">
-          New yearly total: ${{ prorating.newTotal }}/year
+          New yearly total: ETB {{ prorating.newTotal }}/year
         </div>
       </div>
     </div>

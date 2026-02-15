@@ -5,9 +5,9 @@ import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
+const { selectedBuildingId } = useSelectedBuilding()
 
 const units = ref<Unit[]>([])
-const selectedBuildingId = ref<string>('')
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
@@ -114,7 +114,7 @@ watch(selectedBuildingId, () => {
     currentPage.value = 1
     fetchUnits()
   }
-})
+}, { immediate: true })
 
 </script>
 
@@ -185,7 +185,7 @@ watch(selectedBuildingId, () => {
         </template>
 
         <template #rentPrice-cell="{ row }">
-          <span>${{ row.original.rentPrice.toLocaleString() }}</span>
+          <span>ETB {{ row.original.rentPrice.toLocaleString() }}</span>
         </template>
 
         <template #status-cell="{ row }">

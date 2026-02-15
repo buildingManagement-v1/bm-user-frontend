@@ -79,7 +79,7 @@ onMounted(() => {
         </template>
 
         <template #amount-cell="{ row }">
-          <span class="font-medium">${{ row.original.amount.toLocaleString() }}</span>
+          <span class="font-medium">ETB {{ row.original.amount.toLocaleString() }}</span>
         </template>
 
         <template #status-cell="{ row }">

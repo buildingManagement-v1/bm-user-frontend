@@ -84,7 +84,7 @@ onMounted(() => {
         <div class="space-y-6">
           <div>
             <div class="flex items-baseline gap-2">
-              <span class="text-4xl font-bold text-gray-900">${{ plan.price }}</span>
+              <span class="text-4xl font-bold text-gray-900">ETB {{ plan.price }}</span>
               <span class="text-gray-600">/year</span>
             </div>
           </div>

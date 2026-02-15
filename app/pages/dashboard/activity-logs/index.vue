@@ -7,7 +7,7 @@ const { api, buildingApi } = useApi()
 const toast = useToast()
 
 const logs = ref<ActivityLog[]>([])
-const selectedBuildingId = ref<string>('')
+const { selectedBuildingId } = useSelectedBuilding()
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
@@ -163,7 +163,7 @@ watch(selectedBuildingId, () => {
     currentPage.value = 1
     fetchLogs()
   }
-})
+}, { immediate: true })
 
 </script>
 

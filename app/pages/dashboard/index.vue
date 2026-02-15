@@ -6,11 +6,11 @@ import type { ApiResponse } from '~/types'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
+const { selectedBuildingId } = useSelectedBuilding()
 
 const stats = ref<DashboardStats | null>(null)
 const upcomingPayments = ref<UpcomingPayment[]>([])
 const buildings = ref<Building[]>([])
-const selectedBuildingId = ref<string>('')
 const loadingStats = ref(false)
 const loadingPayments = ref(false)
 const loadingBuildings = ref(false)
@@ -40,6 +40,10 @@ async function fetchBuildings() {
     buildings.value = response.data.filter(b => b.status === 'active')
     if (buildings.value.length > 0 && !selectedBuildingId.value) {
       selectedBuildingId.value = buildings.value[0]!.id
+    }
+    if (buildings.value.length > 0 && selectedBuildingId.value) {
+      const exists = buildings.value.some(b => b.id === selectedBuildingId.value)
+      if (!exists) selectedBuildingId.value = buildings.value[0]!.id
     }
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch buildings', description: error.message, color: 'error' })
@@ -92,7 +96,7 @@ watch(selectedBuildingId, () => {
     fetchStats()
     fetchUpcomingPayments()
   }
-})
+}, { immediate: true })
 
 onMounted(() => {
   fetchBuildings()
@@ -137,7 +141,7 @@ onMounted(() => {
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-600">Revenue This Month</p>
-            <p class="text-2xl font-bold text-gray-900 mt-1">${{ stats.revenueThisMonth.toLocaleString() }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">ETB {{ stats.revenueThisMonth.toLocaleString() }}</p>
           </div>
           <UIcon name="i-heroicons-banknotes" class="w-12 h-12 text-warning-500" />
         </div>
@@ -176,7 +180,7 @@ onMounted(() => {
         </template>
 
         <template #amount-cell="{ row }">
-          <span class="font-medium">${{ row.original.amount.toLocaleString() }}</span>
+          <span class="font-medium">ETB {{ row.original.amount.toLocaleString() }}</span>
         </template>
 
         <template #empty>
