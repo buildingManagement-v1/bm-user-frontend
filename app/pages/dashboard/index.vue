@@ -18,8 +18,8 @@ const loadingBuildings = ref(false)
 const columns: TableColumn<UpcomingPayment>[] = [
   { accessorKey: 'tenantName', header: 'Tenant' },
   { accessorKey: 'unit', header: 'Unit' },
-  { accessorKey: 'month', header: 'Due Month' },
-  { accessorKey: 'amount', header: 'Amount' },
+  { accessorKey: 'months', header: 'Months Due' },
+  { accessorKey: 'totalAmount', header: 'Total' },
 ]
 
 const buildingOptions = computed(() =>
@@ -175,12 +175,12 @@ onMounted(() => {
           <span>{{ row.original.unit.unitNumber }}</span>
         </template>
 
-        <template #month-cell="{ row }">
-          <span>{{ formatMonth(row.original.month) }}</span>
+        <template #months-cell="{ row }">
+          <span>{{ row.original.months.map(m => formatMonth(m)).join(', ') }}</span>
         </template>
 
-        <template #amount-cell="{ row }">
-          <span class="font-medium">ETB {{ row.original.amount.toLocaleString() }}</span>
+        <template #totalAmount-cell="{ row }">
+          <span class="font-medium">ETB {{ row.original.totalAmount.toLocaleString() }}</span>
         </template>
 
         <template #empty>

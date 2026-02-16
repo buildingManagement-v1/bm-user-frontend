@@ -15,7 +15,7 @@ export interface UpcomingPayment {
     id: string;
     unitNumber: string;
   };
-  month: string;
-  amount: number;
-  status: string;
+  /** Months (YYYY-MM) grouped for this tenant+unit */
+  months: string[];
+  totalAmount: number;
 }

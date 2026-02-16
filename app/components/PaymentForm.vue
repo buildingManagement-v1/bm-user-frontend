@@ -55,11 +55,12 @@ const tenantOptions = computed(() =>
     }))
 )
 
+// Months that can be covered by a payment: unpaid (current/future) or overdue (past due, not paid)
 const unpaidMonths = computed(() => {
   if (!paymentCalendar.value.length) return []
 
   return paymentCalendar.value[0]?.periods
-    .filter(p => p.status === 'unpaid')
+    .filter(p => p.status === 'unpaid' || p.status === 'overdue')
     .map(p => ({
       value: p.month,
       label: new Date(p.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
