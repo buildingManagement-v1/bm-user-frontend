@@ -14,8 +14,9 @@ export const useNotifications = () => {
   async function fetchNotifications(page = 1, limit = 20) {
     loading.value = true;
     try {
+      const offset = (page - 1) * limit;
       const response = await api<NotificationsResponse>("/v1/notifications", {
-        params: { page, limit },
+        params: { limit, offset },
       });
       notifications.value = response.data ?? [];
       return response;
