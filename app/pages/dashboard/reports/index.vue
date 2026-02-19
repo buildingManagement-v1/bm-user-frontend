@@ -25,6 +25,7 @@ import type {
 } from '~/types/report'
 import type { Building } from '~/types/building'
 import type { ApiResponse, PageInfo } from '~/types'
+import { useApiBaseUrl } from '~/composables/useApiBaseUrl'
 
 const REPORTS_PAGE_SIZE = 10
 
@@ -388,9 +389,9 @@ function formatMonthKeys(months: string[]) {
 async function downloadExport(report: 'outstanding' | 'expirations' | 'vacant') {
   if (!selectedBuildingId.value) return
   try {
-    const config = useRuntimeConfig()
+    const apiBaseUrl = useApiBaseUrl()
     const { token } = useAuth()
-    const url = `${config.public.apiUrl}/v1/app/reports/export?report=${report}`
+    const url = `${apiBaseUrl}/v1/app/reports/export?report=${report}`
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${token.value}`, 'x-building-id': selectedBuildingId.value },
     })
@@ -468,11 +469,14 @@ onMounted(() => {
         </div>
         <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
           <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Expected this month</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900">ETB {{ summaryData.expectedRentThisMonth.toLocaleString() }}</p>
+          <p class="mt-1 text-2xl font-bold text-gray-900">ETB {{ summaryData.expectedRentThisMonth.toLocaleString() }}
+          </p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
           <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Collected this month</p>
-          <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ summaryData.collectedRentThisMonth.toLocaleString() }}</p>
+          <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ summaryData.collectedRentThisMonth.toLocaleString()
+            }}
+          </p>
           <p class="text-xs text-gray-500">Collection {{ summaryData.collectionRateThisMonth }}%</p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
@@ -496,8 +500,10 @@ onMounted(() => {
       </p>
     </UCard>
 
-    <div v-if="summaryData && summaryData.openMaintenanceCount > 0" class="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-sm text-amber-800">
-      <span class="font-medium">Open maintenance:</span> {{ summaryData.openMaintenanceCount }} request(s) pending or in progress.
+    <div v-if="summaryData && summaryData.openMaintenanceCount > 0"
+      class="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-sm text-amber-800">
+      <span class="font-medium">Open maintenance:</span> {{ summaryData.openMaintenanceCount }} request(s) pending or in
+      progress.
     </div>
 
     <UTabs :items="tabs">
@@ -508,22 +514,22 @@ onMounted(() => {
             <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-gray-400" />
           </div>
           <UCard v-else-if="portfolioData && portfolioData.buildings.length > 0">
-            <UTable
-              :data="portfolioData.buildings"
-              :columns="[
-                { accessorKey: 'name', header: 'Building' },
-                { accessorKey: 'occupancyRate', header: 'Occupancy %' },
-                { accessorKey: 'collectedThisMonth', header: 'Collected (month)' },
-                { accessorKey: 'expectedThisMonth', header: 'Expected (month)' },
-                { accessorKey: 'outstandingAmount', header: 'Outstanding' },
-                { accessorKey: 'vacantCount', header: 'Vacant' },
-                { accessorKey: 'expiringIn30', header: 'Expiring ≤30d' },
-                { accessorKey: 'openMaintenance', header: 'Open maint.' },
-              ]"
-            >
-              <template #collectedThisMonth-cell="{ row }">ETB {{ row.original.collectedThisMonth.toLocaleString() }}</template>
-              <template #expectedThisMonth-cell="{ row }">ETB {{ row.original.expectedThisMonth.toLocaleString() }}</template>
-              <template #outstandingAmount-cell="{ row }">ETB {{ row.original.outstandingAmount.toLocaleString() }}</template>
+            <UTable :data="portfolioData.buildings" :columns="[
+              { accessorKey: 'name', header: 'Building' },
+              { accessorKey: 'occupancyRate', header: 'Occupancy %' },
+              { accessorKey: 'collectedThisMonth', header: 'Collected (month)' },
+              { accessorKey: 'expectedThisMonth', header: 'Expected (month)' },
+              { accessorKey: 'outstandingAmount', header: 'Outstanding' },
+              { accessorKey: 'vacantCount', header: 'Vacant' },
+              { accessorKey: 'expiringIn30', header: 'Expiring ≤30d' },
+              { accessorKey: 'openMaintenance', header: 'Open maint.' },
+            ]">
+              <template #collectedThisMonth-cell="{ row }">ETB {{ row.original.collectedThisMonth.toLocaleString()
+                }}</template>
+              <template #expectedThisMonth-cell="{ row }">ETB {{ row.original.expectedThisMonth.toLocaleString()
+                }}</template>
+              <template #outstandingAmount-cell="{ row }">ETB {{ row.original.outstandingAmount.toLocaleString()
+                }}</template>
               <template #occupancyRate-cell="{ row }">{{ row.original.occupancyRate }}%</template>
               <template #name-cell="{ row }">
                 <UButton variant="link" size="xs" @click="selectBuildingFromPortfolio(row.original.id)">
@@ -532,7 +538,8 @@ onMounted(() => {
               </template>
             </UTable>
           </UCard>
-          <UCard v-else-if="portfolioData && portfolioData.buildings.length === 0" class="py-8 text-center text-gray-500">
+          <UCard v-else-if="portfolioData && portfolioData.buildings.length === 0"
+            class="py-8 text-center text-gray-500">
             No buildings in your portfolio yet.
           </UCard>
           <UCard v-else class="py-8 text-center text-gray-500">
@@ -558,7 +565,8 @@ onMounted(() => {
             </UCard>
             <UCard>
               <p class="text-sm text-gray-600">Lost rent / month</p>
-              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ occupancyData.lostRentPerMonth.toLocaleString() }}</p>
+              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ occupancyData.lostRentPerMonth.toLocaleString()
+                }}</p>
             </UCard>
           </div>
 
@@ -576,10 +584,8 @@ onMounted(() => {
                 <h3 class="text-lg font-semibold">Occupancy trend (6 months)</h3>
               </template>
               <div style="height: 200px;">
-                <Line
-                  :data="occupancyTrendChartData"
-                  :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { min: 0, max: 100 } } }"
-                />
+                <Line :data="occupancyTrendChartData"
+                  :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { min: 0, max: 100 } } }" />
               </div>
             </UCard>
           </div>
@@ -599,16 +605,9 @@ onMounted(() => {
                 <span class="font-medium">ETB {{ row.original.rentPrice.toLocaleString() }}</span>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoVacant"
-              :page-info="pageInfoVacant"
-              :current-count="paginatedVacant.length"
-              item-label="units"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pageVacant = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoVacant" :page-info="pageInfoVacant" :current-count="paginatedVacant.length"
+              item-label="units" :limit="limitReports" show-limit-selector @go-to-page="pageVacant = $event"
+              @update:limit="limitReports = $event" />
           </UCard>
         </div>
       </template>
@@ -634,7 +633,8 @@ onMounted(() => {
             </UCard>
             <UCard>
               <p class="text-sm text-gray-600">Collected (period)</p>
-              <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ revenueData.collectedRent.toLocaleString() }}</p>
+              <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ revenueData.collectedRent.toLocaleString() }}
+              </p>
             </UCard>
             <UCard>
               <p class="text-sm text-gray-600">Collection rate</p>
@@ -642,7 +642,8 @@ onMounted(() => {
             </UCard>
             <UCard>
               <p class="text-sm text-gray-600">Outstanding</p>
-              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ revenueData.outstanding.amount.toLocaleString() }}</p>
+              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ revenueData.outstanding.amount.toLocaleString()
+                }}</p>
               <p class="text-xs text-gray-500">{{ revenueData.outstanding.count }} period(s)</p>
             </UCard>
           </div>
@@ -652,10 +653,8 @@ onMounted(() => {
               <h3 class="text-lg font-semibold">Revenue by month</h3>
             </template>
             <div style="height: 280px;">
-              <Line
-                :data="revenueByMonthChartData"
-                :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { beginAtZero: true } } }"
-              />
+              <Line :data="revenueByMonthChartData"
+                :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { beginAtZero: true } } }" />
             </div>
           </UCard>
 
@@ -698,21 +697,16 @@ onMounted(() => {
                 <span class="text-sm text-gray-600">{{ formatMonthKeys(row.original.months) }}</span>
               </template>
               <template #maxDaysOverdue-cell="{ row }">
-                <UBadge :color="row.original.maxDaysOverdue > 60 ? 'error' : row.original.maxDaysOverdue > 30 ? 'warning' : 'neutral'" variant="subtle">
+                <UBadge
+                  :color="row.original.maxDaysOverdue > 60 ? 'error' : row.original.maxDaysOverdue > 30 ? 'warning' : 'neutral'"
+                  variant="subtle">
                   {{ row.original.maxDaysOverdue }} days
                 </UBadge>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoOutstanding"
-              :page-info="pageInfoOutstanding"
-              :current-count="paginatedOutstanding.length"
-              item-label="items"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pageOutstanding = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoOutstanding" :page-info="pageInfoOutstanding"
+              :current-count="paginatedOutstanding.length" item-label="items" :limit="limitReports" show-limit-selector
+              @go-to-page="pageOutstanding = $event" @update:limit="limitReports = $event" />
           </UCard>
         </div>
       </template>
@@ -722,7 +716,8 @@ onMounted(() => {
           <div v-if="tenantData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <UCard>
               <p class="text-sm text-gray-600">Total / Active / Inactive</p>
-              <p class="mt-1 text-xl font-bold">{{ tenantData.totalTenants }} / {{ tenantData.activeTenants }} / {{ tenantData.inactiveTenants }}</p>
+              <p class="mt-1 text-xl font-bold">{{ tenantData.totalTenants }} / {{ tenantData.activeTenants }} / {{
+                tenantData.inactiveTenants }}</p>
             </UCard>
             <UCard class="border-l-4 border-l-red-500">
               <p class="text-sm text-gray-600">Expiring in 30 days</p>
@@ -764,16 +759,9 @@ onMounted(() => {
                 </UBadge>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoExpirations"
-              :page-info="pageInfoExpirations"
-              :current-count="paginatedExpirations.length"
-              item-label="expirations"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pageExpirations = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoExpirations" :page-info="pageInfoExpirations"
+              :current-count="paginatedExpirations.length" item-label="expirations" :limit="limitReports"
+              show-limit-selector @go-to-page="pageExpirations = $event" @update:limit="limitReports = $event" />
           </UCard>
 
           <UCard v-if="tenantData">
@@ -788,16 +776,9 @@ onMounted(() => {
                 <span>{{ row.original.lastPayment ? formatDate(row.original.lastPayment) : 'N/A' }}</span>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoPaymentHistory"
-              :page-info="pageInfoPaymentHistory"
-              :current-count="paginatedPaymentHistory.length"
-              item-label="tenants"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pagePaymentHistory = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoPaymentHistory" :page-info="pageInfoPaymentHistory"
+              :current-count="paginatedPaymentHistory.length" item-label="tenants" :limit="limitReports"
+              show-limit-selector @go-to-page="pagePaymentHistory = $event" @update:limit="limitReports = $event" />
           </UCard>
         </div>
       </template>
