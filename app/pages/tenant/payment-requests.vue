@@ -17,6 +17,7 @@ const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
 const currentPage = ref(1)
+const searchQ = ref('')
 const isFormOpen = ref(false)
 
 const columns: TableColumn<TenantPaymentRequest>[] = [
@@ -36,6 +37,7 @@ async function fetchRequests() {
     const params = new URLSearchParams()
     params.set('limit', String(limit.value))
     params.set('offset', String(offset))
+    if (searchQ.value.trim()) params.set('q', searchQ.value.trim())
     const res = await api<PaginatedResponse<TenantPaymentRequest[]>>(
       `/v1/tenant/payment-requests?${params.toString()}`
     )
@@ -56,6 +58,11 @@ function goToPage(page: number) {
 
 function onLimitChange(newLimit: number) {
   limit.value = newLimit
+  currentPage.value = 1
+  fetchRequests()
+}
+
+function onSearch() {
   currentPage.value = 1
   fetchRequests()
 }
@@ -105,6 +112,20 @@ onMounted(() => {
         Submit payment
       </UButton>
     </div>
+
+    <UCard class="mb-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <UInput
+          v-model="searchQ"
+          placeholder="Search by unit or amount..."
+          class="w-56"
+          @keyup.enter="onSearch"
+        />
+        <UButton size="sm" color="neutral" variant="outline" @click="onSearch">
+          Search
+        </UButton>
+      </div>
+    </UCard>
 
     <UCard>
       <PaginationBar

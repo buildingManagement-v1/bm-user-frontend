@@ -43,6 +43,12 @@ const allNavigation: NavItem[] = [
     managerRoles: [ManagerRole.TENANT_MANAGER, ManagerRole.OPERATIONS_MANAGER]
   },
   {
+    label: 'Parking requests',
+    icon: 'i-heroicons-document-check',
+    to: '/dashboard/parking-requests',
+    managerRoles: [ManagerRole.TENANT_MANAGER, ManagerRole.OPERATIONS_MANAGER]
+  },
+  {
     label: 'Maintenance',
     icon: 'i-heroicons-wrench-screwdriver',
     to: '/dashboard/maintenance-requests',

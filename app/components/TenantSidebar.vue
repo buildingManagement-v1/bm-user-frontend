@@ -14,6 +14,7 @@ const navigation = [
   { label: 'Maintenance', icon: 'i-heroicons-wrench-screwdriver', to: '/tenant/maintenance' },
   { label: 'Payment History', icon: 'i-heroicons-banknotes', to: '/tenant/payments' },
   { label: 'Submit payment', icon: 'i-heroicons-document-plus', to: '/tenant/payment-requests' },
+  { label: 'Parking requests', icon: 'i-heroicons-truck', to: '/tenant/parking-requests' },
   { label: 'Notifications', icon: 'i-heroicons-bell', to: '/tenant/notifications' },
 ]
 

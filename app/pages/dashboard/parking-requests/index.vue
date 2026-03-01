@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { TenantPaymentRequest } from '~/types/payment-request'
+import type { TenantParkingRequest } from '~/types/parking'
 import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
 const { buildingApi } = useApi()
 const toast = useToast()
 
-const requests = ref<TenantPaymentRequest[]>([])
+const requests = ref<TenantParkingRequest[]>([])
 const { selectedBuildingId } = useSelectedBuilding()
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
@@ -18,8 +18,6 @@ const approvingId = ref<string | null>(null)
 const rejectingId = ref<string | null>(null)
 const rejectModalOpen = ref(false)
 const rejectReason = ref('')
-const receiptModalOpen = ref(false)
-const receiptPreviewUrl = ref<string | null>(null)
 
 const statusOptions = [
   { value: 'pending', label: 'Pending' },
@@ -27,14 +25,11 @@ const statusOptions = [
   { value: 'rejected', label: 'Rejected' },
 ]
 
-const columns: TableColumn<TenantPaymentRequest>[] = [
+const columns: TableColumn<TenantParkingRequest>[] = [
   { accessorKey: 'tenant', header: 'Tenant' },
   { accessorKey: 'unit', header: 'Unit' },
-  { accessorKey: 'amount', header: 'Amount' },
-  { accessorKey: 'type', header: 'Type' },
-  { accessorKey: 'paymentDate', header: 'Date' },
+  { accessorKey: 'licensePlate', header: 'License plate' },
   { accessorKey: 'createdAt', header: 'Submitted' },
-  { accessorKey: 'receipt', header: 'Receipt' },
   { accessorKey: 'actions', header: '' },
 ]
 
@@ -48,9 +43,9 @@ async function fetchRequests() {
     params.set('offset', String(offset))
     if (statusFilter.value) params.set('status', statusFilter.value)
     if (searchQ.value.trim()) params.set('q', searchQ.value.trim())
-    const res = await buildingApi<PaginatedResponse<TenantPaymentRequest[]>>(
+    const res = await buildingApi<PaginatedResponse<TenantParkingRequest[]>>(
       selectedBuildingId.value,
-      `/v1/app/payment-requests?${params.toString()}`
+      `/v1/app/parking-requests?${params.toString()}`
     )
     requests.value = res.data ?? []
     pageInfo.value = res.meta?.page_info ?? null
@@ -89,10 +84,10 @@ async function approve(id: string) {
   try {
     await buildingApi<ApiResponse<unknown>>(
       selectedBuildingId.value,
-      `/v1/app/payment-requests/${id}/approve`,
+      `/v1/app/parking-requests/${id}/approve`,
       { method: 'POST' }
     )
-    toast.add({ title: 'Payment approved and recorded', color: 'success' })
+    toast.add({ title: 'Parking request approved and car registered', color: 'success' })
     fetchRequests()
   } catch (e: any) {
     toast.add({ title: 'Failed to approve', description: e.message, color: 'error' })
@@ -118,7 +113,7 @@ async function confirmReject() {
   try {
     await buildingApi<ApiResponse<unknown>>(
       selectedBuildingId.value,
-      `/v1/app/payment-requests/${rejectingId.value}/reject`,
+      `/v1/app/parking-requests/${rejectingId.value}/reject`,
       { method: 'POST', body: { rejectionReason: rejectReason.value || undefined } }
     )
     toast.add({ title: 'Request rejected', color: 'success' })
@@ -127,30 +122,6 @@ async function confirmReject() {
   } catch (e: any) {
     toast.add({ title: 'Failed to reject', description: e.message, color: 'error' })
   }
-}
-
-async function viewReceipt(id: string) {
-  if (!selectedBuildingId.value) return
-  try {
-    const blob = await buildingApi<Blob>(
-      selectedBuildingId.value,
-      `/v1/app/payment-requests/${id}/receipt`,
-      { responseType: 'blob' }
-    )
-    const url = URL.createObjectURL(blob as unknown as Blob)
-    receiptPreviewUrl.value = url
-    receiptModalOpen.value = true
-  } catch (e: any) {
-    toast.add({ title: 'Failed to load receipt', description: e.message, color: 'error' })
-  }
-}
-
-function closeReceiptPreview() {
-  if (receiptPreviewUrl.value) {
-    URL.revokeObjectURL(receiptPreviewUrl.value)
-    receiptPreviewUrl.value = null
-  }
-  receiptModalOpen.value = false
 }
 
 watch(selectedBuildingId, () => {
@@ -165,8 +136,8 @@ watch(selectedBuildingId, () => {
   <div class="space-y-6">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Payment requests</h1>
-        <p class="text-gray-600 mt-1">Approve or reject tenant-submitted payments</p>
+        <h1 class="text-2xl font-bold text-gray-900">Parking requests</h1>
+        <p class="text-gray-600 mt-1">Approve or reject tenant parking registration requests</p>
       </div>
       <BuildingSelector v-model="selectedBuildingId" />
     </div>
@@ -177,7 +148,7 @@ watch(selectedBuildingId, () => {
           <span class="text-sm text-gray-600">Search</span>
           <UInput
             v-model="searchQ"
-            placeholder="Tenant, unit, amount..."
+            placeholder="Tenant, unit, license plate..."
             class="w-56"
             @keyup.enter="onSearch"
           />
@@ -216,22 +187,11 @@ watch(selectedBuildingId, () => {
           <span v-if="row.original.unit">Unit {{ row.original.unit.unitNumber }}</span>
           <span v-else>-</span>
         </template>
-        <template #amount-cell="{ row }">
-          ETB {{ Number(row.original.amount).toLocaleString() }}
-        </template>
-        <template #type-cell="{ row }">
-          <span class="capitalize">{{ row.original.type }}</span>
-        </template>
-        <template #paymentDate-cell="{ row }">
-          {{ new Date(row.original.paymentDate).toLocaleDateString() }}
+        <template #licensePlate-cell="{ row }">
+          <span class="font-mono font-medium">{{ row.original.licensePlate }}</span>
         </template>
         <template #createdAt-cell="{ row }">
           {{ new Date(row.original.createdAt).toLocaleDateString() }}
-        </template>
-        <template #receipt-cell="{ row }">
-          <UButton size="xs" color="primary" variant="ghost" @click="viewReceipt(row.original.id)">
-            View
-          </UButton>
         </template>
         <template #actions-cell="{ row }">
           <template v-if="row.original.status === 'pending'">
@@ -260,29 +220,21 @@ watch(selectedBuildingId, () => {
         <template #empty>
           <div class="text-center py-12">
             <p class="text-gray-500">
-              {{ selectedBuildingId ? 'No payment requests' : 'Select a building' }}
+              {{ selectedBuildingId ? 'No parking requests' : 'Select a building' }}
             </p>
           </div>
         </template>
       </UTable>
     </UCard>
 
-    <UModal v-model:open="rejectModalOpen" title="Reject payment request" @close="closeRejectModal">
+    <UModal v-model:open="rejectModalOpen" title="Reject parking request" @close="closeRejectModal">
       <template #body>
         <UFormField label="Reason (optional)">
-          <UTextarea v-model="rejectReason" placeholder="e.g. Receipt unclear" :rows="3" />
+          <UTextarea v-model="rejectReason" placeholder="e.g. Invalid plate format" :rows="3" />
         </UFormField>
         <div class="flex gap-2 justify-end mt-4">
           <UButton color="neutral" variant="ghost" @click="closeRejectModal">Cancel</UButton>
           <UButton color="error" @click="confirmReject">Reject</UButton>
-        </div>
-      </template>
-    </UModal>
-
-    <UModal v-model:open="receiptModalOpen" title="Receipt" @close="closeReceiptPreview">
-      <template #body>
-        <div class="flex justify-center p-4">
-          <img v-if="receiptPreviewUrl" :src="receiptPreviewUrl" alt="Receipt" class="max-w-full max-h-[70vh] object-contain" />
         </div>
       </template>
     </UModal>
