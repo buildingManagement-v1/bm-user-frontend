@@ -19,6 +19,7 @@ const toast = useToast()
 
 const state = reactive<{
   tenantId: string
+  unitId: string
   amount: number
   type: PaymentType
   paymentDate: string
@@ -26,6 +27,7 @@ const state = reactive<{
   notes?: string
 }>({
   tenantId: '',
+  unitId: '',
   amount: 0,
   type: 'rent' as PaymentType,
   paymentDate: new Date().toISOString().split('T')[0] || '',
@@ -35,8 +37,10 @@ const state = reactive<{
 
 const loading = ref(false)
 const loadingTenants = ref(false)
+const loadingTenantDetails = ref(false)
 const loadingCalendar = ref(false)
 const tenants = ref<Tenant[]>([])
+const tenantDetails = ref<Tenant | null>(null)
 const paymentCalendar = ref<PaymentCalendar[]>([])
 
 const typeOptions = [
@@ -51,28 +55,53 @@ const tenantOptions = computed(() =>
     .filter(t => t.status === 'active')
     .map(t => ({
       value: t.id,
-      label: `${t.name} ${t.unit ? `(${t.unit.unitNumber})` : ''}`,
+      label: t.name,
     }))
 )
 
-// Months that can be covered by a payment: unpaid (current/future) or overdue (past due, not paid)
-const unpaidMonths = computed(() => {
-  if (!paymentCalendar.value.length) return []
+// Units from the selected tenant's active leases (from tenant details fetch)
+const unitOptions = computed(() => {
+  const leases = tenantDetails.value?.leases?.filter(l => l.status === 'active') ?? []
+  return leases.map(l => ({
+    value: l.unit.id,
+    label: `Unit ${l.unit.unitNumber}`,
+  }))
+})
 
-  return paymentCalendar.value[0]?.periods
+// Months for the selected unit's lease: unpaid/overdue from calendar entry matching unitId
+const unpaidMonths = computed(() => {
+  if (!state.unitId || !paymentCalendar.value.length) return []
+  const calendar = paymentCalendar.value.find(c => c.unitId === state.unitId)
+  if (!calendar?.periods) return []
+  return calendar.periods
     .filter(p => p.status === 'unpaid' || p.status === 'overdue')
     .map(p => ({
       value: p.month,
       label: new Date(p.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
-    })) || []
+    }))
 })
 
 const selectedTenant = computed({
   get: () => tenantOptions.value.find(t => t.value === state.tenantId),
-  set: (val: { value: string; label: string } | undefined) => {
+  set: async (val: { value: string; label: string } | undefined) => {
     state.tenantId = val?.value || ''
+    state.unitId = ''
+    tenantDetails.value = null
+    paymentCalendar.value = []
     if (state.tenantId) {
-      fetchPaymentCalendar(state.tenantId)
+      await fetchTenantDetails(state.tenantId)
+    }
+  }
+})
+
+const selectedUnit = computed({
+  get: () => unitOptions.value.find(u => u.value === state.unitId),
+  set: async (val: { value: string; label: string } | undefined) => {
+    state.unitId = val?.value || ''
+    if (state.tenantId && state.unitId) {
+      await fetchPaymentCalendar(state.tenantId)
+    } else {
+      paymentCalendar.value = []
     }
   }
 })
@@ -103,6 +132,22 @@ async function fetchTenants() {
     toast.add({ title: 'Failed to fetch tenants', description: error.message, color: 'error' })
   } finally {
     loadingTenants.value = false
+  }
+}
+
+async function fetchTenantDetails(tenantId: string) {
+  loadingTenantDetails.value = true
+  try {
+    const response = await buildingApi<ApiResponse<Tenant>>(
+      props.buildingId,
+      `/v1/app/tenants/${tenantId}`
+    )
+    tenantDetails.value = response.data
+  } catch (error: any) {
+    toast.add({ title: 'Failed to load tenant units', description: error.message, color: 'error' })
+    tenantDetails.value = null
+  } finally {
+    loadingTenantDetails.value = false
   }
 }
 
@@ -155,6 +200,19 @@ onMounted(() => {
     <UFormField label="Tenant" name="tenantId" required>
       <USelectMenu v-model="selectedTenant" :items="tenantOptions" :loading="loadingTenants" placeholder="Select tenant"
         class="w-full" />
+    </UFormField>
+
+    <UFormField v-if="state.tenantId" label="Unit" name="unitId" required>
+      <USelectMenu
+        v-model="selectedUnit"
+        :items="unitOptions"
+        :loading="loadingTenantDetails"
+        placeholder="Select unit"
+        class="w-full"
+      />
+      <template v-if="!loadingTenantDetails && tenantDetails && (!tenantDetails.leases?.length || !unitOptions.length)" #hint>
+        <span class="text-xs text-amber-600">This tenant has no active leases.</span>
+      </template>
     </UFormField>
 
     <div class="grid grid-cols-2 gap-4">

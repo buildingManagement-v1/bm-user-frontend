@@ -59,6 +59,7 @@ export interface Payment {
 
 export interface CreatePaymentRequest {
   tenantId: string;
+  unitId: string;
   amount: number;
   type: PaymentType;
   paymentDate: string;

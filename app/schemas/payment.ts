@@ -3,6 +3,7 @@ import { PaymentType } from "~/types/payment";
 
 export const createPaymentSchema = z.object({
   tenantId: z.string().uuid("Please select a tenant"),
+  unitId: z.string().uuid("Please select a unit"),
   amount: z.number().positive("Amount must be greater than 0"),
   type: z.nativeEnum(PaymentType),
   paymentDate: z.string().min(1, "Payment date is required"),
