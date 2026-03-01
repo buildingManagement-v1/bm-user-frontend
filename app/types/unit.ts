@@ -3,6 +3,7 @@ export enum UnitType {
   OFFICE = "office",
   STORAGE = "storage",
   RESTAURANT = "restaurant",
+  GUEST_HOUSE = "guest_house",
   OTHER = "other",
 }
 

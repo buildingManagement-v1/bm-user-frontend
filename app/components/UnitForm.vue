@@ -41,6 +41,7 @@ const typeOptions = [
   { value: 'office', label: 'Office' },
   { value: 'storage', label: 'Storage' },
   { value: 'restaurant', label: 'Restaurant' },
+  { value: 'guest_house', label: 'Guest House' },
   { value: 'other', label: 'Other' },
 ]
 
