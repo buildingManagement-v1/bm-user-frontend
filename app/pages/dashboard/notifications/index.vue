@@ -95,22 +95,15 @@ onMounted(() => {
               </div>
             </div>
 
-            <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash"
-              @click.stop="handleDelete(notification.id)" />
+            <!-- <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash"
+              @click.stop="handleDelete(notification.id)" /> -->
           </div>
         </div>
       </div>
     </UCard>
 
-    <PaginationBar
-      v-if="pageInfo"
-      :page-info="pageInfo"
-      item-label="notifications"
-      :current-count="notifications.length"
-      :limit="limit"
-      show-limit-selector
-      @go-to-page="goToPage"
-      @update:limit="onLimitChange"
-    />
+    <PaginationBar v-if="pageInfo" :page-info="pageInfo" item-label="notifications"
+      :current-count="notifications.length" :limit="limit" show-limit-selector @go-to-page="goToPage"
+      @update:limit="onLimitChange" />
   </div>
 </template>
