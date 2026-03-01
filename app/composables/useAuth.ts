@@ -175,6 +175,34 @@ export const useAuth = () => {
     }
   };
 
+  const updateEmail = async (newEmail: string) => {
+    if (userType.value !== "user" && userType.value !== "manager") {
+      throw new Error("Not available");
+    }
+    const endpoint =
+      userType.value === "user"
+        ? "/v1/app/auth/me"
+        : "/v1/manager/auth/me";
+
+    const response = await $fetch<ApiResponse<{ email: string }>>(
+      `${config.public.apiUrl}${endpoint}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: { email: newEmail },
+      }
+    );
+
+    const newEmailValue = response.data?.email ?? newEmail;
+    if (user.value && "email" in user.value) {
+      const updatedUser = { ...user.value, email: newEmailValue };
+      user.value = updatedUser;
+      userCookie.value = updatedUser;
+    }
+  };
+
   const isAuthenticated = computed(() => !!token.value);
 
   return {
@@ -187,6 +215,7 @@ export const useAuth = () => {
     logout,
     refresh,
     changePassword,
+    updateEmail,
     isAuthenticated,
   };
 };

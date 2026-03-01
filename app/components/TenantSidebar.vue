@@ -16,6 +16,7 @@ const navigation = [
   { label: 'Submit payment', icon: 'i-heroicons-document-plus', to: '/tenant/payment-requests' },
   { label: 'Parking requests', icon: 'i-heroicons-truck', to: '/tenant/parking-requests' },
   { label: 'Notifications', icon: 'i-heroicons-bell', to: '/tenant/notifications' },
+  { label: 'Settings', icon: 'i-heroicons-cog-6-tooth', to: '/tenant/settings' },
 ]
 
 function isActive(itemTo: string) {
