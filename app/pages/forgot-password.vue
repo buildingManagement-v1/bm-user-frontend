@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
-import { useApiBaseUrl } from '~/composables/useApiBaseUrl'
 import { forgotPasswordSchema, type ForgotPasswordSchema } from '~/schemas/auth'
 
 definePageMeta({
   layout: false,
 })
 
-const apiBaseUrl = useApiBaseUrl()
+const config = useRuntimeConfig()
 const router = useRouter()
 const toast = useToast()
 
@@ -20,7 +19,7 @@ const loading = ref(false)
 async function onSubmit(event: FormSubmitEvent<ForgotPasswordSchema>) {
   loading.value = true
   try {
-    await $fetch(`${apiBaseUrl}/v1/app/auth/forgot-password`, {
+    await $fetch(`${config.public.apiUrl}/v1/app/auth/forgot-password`, {
       method: 'POST',
       body: { email: event.data.email },
     })

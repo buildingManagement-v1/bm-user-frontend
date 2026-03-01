@@ -1,12 +1,10 @@
-import { useApiBaseUrl } from "./useApiBaseUrl";
-
 export const useApi = () => {
-  const apiBaseUrl = useApiBaseUrl();
+  const config = useRuntimeConfig();
   const { token, refresh, logout } = useAuth();
 
   const api = async <T = any>(url: string, options: any = {}) => {
     try {
-      return await $fetch<T>(`${apiBaseUrl}${url}`, {
+      return await $fetch<T>(`${config.public.apiUrl}${url}`, {
         ...options,
         headers: {
           ...options.headers,
@@ -36,7 +34,7 @@ export const useApi = () => {
   const buildingApi = async <T = any>(
     buildingId: string,
     url: string,
-    options: any = {},
+    options: any = {}
   ) => {
     return api<T>(url, {
       ...options,

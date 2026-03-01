@@ -5,12 +5,11 @@ import type {
   LoginResponse,
   ApiResponse,
 } from "~/types";
-import { useApiBaseUrl } from "./useApiBaseUrl";
 
 export type UserType = "user" | "manager" | "tenant";
 
 export const useAuth = () => {
-  const apiBaseUrl = useApiBaseUrl();
+  const config = useRuntimeConfig();
   const router = useRouter();
 
   const userCookie = useCookie<User | Manager | TenantAuthData | null>("user", {
@@ -19,7 +18,7 @@ export const useAuth = () => {
 
   const user = useState<User | Manager | TenantAuthData | null>(
     "user",
-    () => userCookie.value,
+    () => userCookie.value
   );
   const token = useCookie("token", {
     maxAge: 60 * 60 * 24 * 7,
@@ -36,22 +35,22 @@ export const useAuth = () => {
   const login = async (
     email: string,
     password: string,
-    type: UserType = "user",
+    type: UserType = "user"
   ) => {
     try {
       const endpoint =
         type === "user"
           ? "/v1/app/auth/login"
           : type === "manager"
-            ? "/v1/manager/auth/login"
-            : "/v1/tenant/auth/login";
+          ? "/v1/manager/auth/login"
+          : "/v1/tenant/auth/login";
 
       const response = await $fetch<ApiResponse<LoginResponse>>(
-        `${apiBaseUrl}${endpoint}`,
+        `${config.public.apiUrl}${endpoint}`,
         {
           method: "POST",
           body: { email, password },
-        },
+        }
       );
 
       token.value = response.data.accessToken;
@@ -84,15 +83,15 @@ export const useAuth = () => {
     name: string,
     email: string,
     password: string,
-    phone?: string,
+    phone?: string
   ) => {
     try {
       const response = await $fetch<ApiResponse<LoginResponse>>(
-        `${apiBaseUrl}/v1/app/auth/register`,
+        `${config.public.apiUrl}/v1/app/auth/register`,
         {
           method: "POST",
           body: { name, email, password, phone },
-        },
+        }
       );
 
       token.value = response.data.accessToken;
@@ -133,11 +132,11 @@ export const useAuth = () => {
         : "/v1/manager/auth/refresh";
 
     const response = await $fetch<ApiResponse<{ accessToken: string }>>(
-      `${apiBaseUrl}${endpoint}`,
+      `${config.public.apiUrl}${endpoint}`,
       {
         method: "POST",
         body: { refreshToken: refreshToken.value },
-      },
+      }
     );
 
     token.value = response.data.accessToken;
@@ -151,7 +150,7 @@ export const useAuth = () => {
           ? "/v1/app/auth/change-password"
           : "/v1/manager/auth/change-password";
 
-      await $fetch(`${apiBaseUrl}${endpoint}`, {
+      await $fetch(`${config.public.apiUrl}${endpoint}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token.value}`,
