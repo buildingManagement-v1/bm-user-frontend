@@ -19,3 +19,9 @@ export interface UpcomingPayment {
   months: string[];
   totalAmount: number;
 }
+
+export interface RevenueByMonth {
+  month: string;
+  label: string;
+  revenue: number;
+}

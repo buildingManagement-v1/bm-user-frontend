@@ -74,7 +74,7 @@ const isOwnerOrManager = computed(() => userType.value === 'user' || userType.va
     </div>
 
     <template v-else>
-      <UCard>
+      <UCard variant="elevated">
         <template #header>
           <h2 class="text-lg font-semibold">Change email</h2>
         </template>
@@ -88,7 +88,7 @@ const isOwnerOrManager = computed(() => userType.value === 'user' || userType.va
         </UForm>
       </UCard>
 
-      <UCard>
+      <UCard variant="elevated">
         <template #header>
           <h2 class="text-lg font-semibold">Change password</h2>
         </template>

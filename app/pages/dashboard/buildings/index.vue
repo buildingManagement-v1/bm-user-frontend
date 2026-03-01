@@ -74,7 +74,7 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <UCard>
+    <UCard variant="elevated">
       <UTable :data="buildings" :columns="columns" :loading="loading">
         <template #city-cell="{ row }">
           <span v-if="row.original.city">{{ row.original.city }}, {{ row.original.country }}</span>

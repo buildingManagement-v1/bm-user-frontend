@@ -249,7 +249,7 @@ watch(selectedBuildingId, () => {
       </div>
     </div>
 
-    <UCard v-if="selectedBuildingId" class="mb-4">
+    <UCard v-if="selectedBuildingId" class="mb-4" variant="elevated">
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-2">
           <span class="text-sm text-gray-600">Status</span>
@@ -263,16 +263,9 @@ watch(selectedBuildingId, () => {
       </div>
     </UCard>
 
-    <UCard>
-      <PaginationBar
-        :page-info="pageInfo"
-        item-label="tenants"
-        :current-count="tenants.length"
-        :limit="limit"
-        show-limit-selector
-        @go-to-page="goToPage"
-        @update:limit="onLimitChange"
-      />
+    <UCard variant="elevated">
+      <PaginationBar :page-info="pageInfo" item-label="tenants" :current-count="tenants.length" :limit="limit"
+        show-limit-selector @go-to-page="goToPage" @update:limit="onLimitChange" />
       <UTable :data="tenantsWithUnits" :columns="columns" :loading="loading">
         <template #phone-cell="{ row }">
           <span v-if="row.original.phone">{{ row.original.phone }}</span>

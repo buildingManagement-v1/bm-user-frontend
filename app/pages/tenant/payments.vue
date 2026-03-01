@@ -93,7 +93,7 @@ onMounted(() => {
       <p class="text-gray-600 mt-1">View your payment records and transaction history</p>
     </div>
 
-    <UCard>
+    <UCard variant="elevated">
       <PaginationBar
         :page-info="pageInfo"
         item-label="payments"

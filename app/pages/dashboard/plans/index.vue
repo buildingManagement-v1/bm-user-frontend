@@ -73,7 +73,7 @@ onMounted(() => {
     </div>
 
     <div v-else class="grid md:grid-cols-3 gap-6">
-      <UCard v-for="plan in plans" :key="plan.id" :class="plan.name === 'Free' ? 'border-2 border-primary-500' : ''">
+      <UCard v-for="plan in plans" :key="plan.id" variant="elevated" :class="plan.name === 'Free' ? 'border-2 border-primary-500' : ''">
         <template #header>
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-bold text-gray-900">{{ plan.name }}</h2>

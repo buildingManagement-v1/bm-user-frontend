@@ -181,7 +181,7 @@ watch(selectedBuildingId, () => {
         <BuildingSelector v-model="selectedBuildingId" />
     </div>
 
-    <UCard>
+    <UCard variant="elevated">
       <template #header>
         <h3 class="text-lg font-semibold">Filters</h3>
       </template>
@@ -209,7 +209,7 @@ watch(selectedBuildingId, () => {
       </div>
     </UCard>
 
-    <UCard>
+    <UCard variant="elevated">
       <PaginationBar
         :page-info="pageInfo"
         item-label="logs"

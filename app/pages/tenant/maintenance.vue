@@ -81,7 +81,7 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <UCard>
+    <UCard variant="elevated">
       <PaginationBar
         :page-info="pageInfo"
         item-label="requests"

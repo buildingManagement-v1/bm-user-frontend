@@ -120,7 +120,7 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <UCard class="mb-4">
+    <UCard variant="elevated" class="mb-4">
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-2">
           <span class="text-sm text-gray-600">Status</span>
@@ -134,7 +134,7 @@ onMounted(() => {
       </div>
     </UCard>
 
-    <UCard>
+    <UCard variant="elevated">
       <PaginationBar
         :page-info="pageInfo"
         item-label="managers"

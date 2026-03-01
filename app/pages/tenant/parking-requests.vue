@@ -84,7 +84,7 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <UCard class="mb-4">
+    <UCard variant="elevated" class="mb-4">
       <div class="flex flex-wrap items-center gap-3">
         <UInput
           v-model="searchQ"
@@ -98,7 +98,7 @@ onMounted(() => {
       </div>
     </UCard>
 
-    <UCard>
+    <UCard variant="elevated">
       <PaginationBar
         v-if="pageInfo"
         :page-info="pageInfo"

@@ -135,39 +135,23 @@ watch(selectedBuildingId, () => {
       </div>
     </div>
 
-    <UCard v-if="selectedBuildingId" class="mb-4">
+    <UCard v-if="selectedBuildingId" class="mb-4" variant="elevated">
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-2">
           <span class="text-sm text-gray-600">Status</span>
-          <USelectMenu
-            v-model="selectedStatusOption"
-            :items="statusOptions"
-            class="w-40"
-          />
+          <USelectMenu v-model="selectedStatusOption" :items="statusOptions" class="w-40" />
         </div>
         <div class="flex items-center gap-2">
           <span class="text-sm text-gray-600">Unit number</span>
-          <UInput
-            v-model="searchQ"
-            placeholder="Search..."
-            class="w-48"
-            @keyup.enter="onFilterChange"
-          />
+          <UInput v-model="searchQ" placeholder="Search..." class="w-48" @keyup.enter="onFilterChange" />
           <UButton size="sm" color="neutral" variant="outline" @click="onFilterChange">Search</UButton>
         </div>
       </div>
     </UCard>
 
-    <UCard>
-      <PaginationBar
-        :page-info="pageInfo"
-        item-label="units"
-        :current-count="units.length"
-        :limit="limit"
-        show-limit-selector
-        @go-to-page="goToPage"
-        @update:limit="onLimitChange"
-      />
+    <UCard variant="elevated">
+      <PaginationBar :page-info="pageInfo" item-label="units" :current-count="units.length" :limit="limit"
+        show-limit-selector @go-to-page="goToPage" @update:limit="onLimitChange" />
       <UTable :data="units" :columns="columns" :loading="loading">
         <template #floor-cell="{ row }">
           <span v-if="row.original.floor !== null && row.original.floor !== undefined">{{ row.original.floor }}</span>

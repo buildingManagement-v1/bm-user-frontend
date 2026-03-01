@@ -43,7 +43,7 @@ async function onSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <UCard class="w-full max-w-md shadow-xl">
+    <UCard variant="elevated" class="w-full max-w-md">
       <template #header>
         <div class="text-center">
           <UIcon name="i-heroicons-lock-closed" class="w-12 h-12 text-primary-600 mx-auto mb-4" />

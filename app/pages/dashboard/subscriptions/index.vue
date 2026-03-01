@@ -161,7 +161,7 @@ onMounted(() => {
         :description="`Your subscription will expire in ${daysRemaining} days on ${new Date(subscription.billingCycleEnd).toLocaleDateString()}`" />
 
       <!-- Current Plan Card -->
-      <UCard>
+      <UCard variant="elevated">
         <template #header>
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold">Current Plan</h2>
@@ -212,7 +212,7 @@ onMounted(() => {
       </UCard>
 
       <!-- Usage Statistics -->
-      <UCard v-if="subscription.plan">
+      <UCard v-if="subscription.plan" variant="elevated">
         <template #header>
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold">Usage Statistics</h2>
@@ -260,7 +260,7 @@ onMounted(() => {
       </UCard>
 
       <!-- Billing Information -->
-      <UCard>
+      <UCard variant="elevated">
         <template #header>
           <h2 class="text-lg font-semibold">Billing Information</h2>
         </template>

@@ -142,7 +142,7 @@ watch(selectedBuildingId, () => {
       <BuildingSelector v-model="selectedBuildingId" />
     </div>
 
-    <UCard v-if="selectedBuildingId" class="mb-4">
+    <UCard v-if="selectedBuildingId" variant="elevated" class="mb-4">
       <div class="flex flex-wrap items-center gap-3">
         <div class="flex items-center gap-2">
           <span class="text-sm text-gray-600">Search</span>
@@ -168,7 +168,7 @@ watch(selectedBuildingId, () => {
       </div>
     </UCard>
 
-    <UCard>
+    <UCard variant="elevated">
       <PaginationBar
         v-if="pageInfo"
         :page-info="pageInfo"

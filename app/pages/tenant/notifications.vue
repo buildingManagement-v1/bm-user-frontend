@@ -70,7 +70,7 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <UCard>
+    <UCard variant="elevated">
       <PaginationBar v-if="pageInfo" :page-info="pageInfo" item-label="notifications"
         :current-count="notifications.length" :limit="limit" show-limit-selector @go-to-page="goToPage"
         @update:limit="onLimitChange" />

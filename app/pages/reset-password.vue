@@ -52,7 +52,7 @@ async function onSubmit(event: FormSubmitEvent<ResetPasswordSchema>) {
 
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <UCard class="w-full max-w-md shadow-xl">
+    <UCard variant="elevated" class="w-full max-w-md">
       <template #header>
         <div class="text-center">
           <h1 class="text-2xl font-bold text-gray-900">Reset Password</h1>

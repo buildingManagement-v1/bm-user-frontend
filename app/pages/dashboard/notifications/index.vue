@@ -66,7 +66,7 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <UCard>
+    <UCard variant="elevated">
       <div v-if="loading" class="flex justify-center py-12">
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
       </div>

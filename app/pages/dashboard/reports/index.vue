@@ -450,7 +450,7 @@ onMounted(() => {
     </div>
 
     <!-- Owner summary (Phase 1) -->
-    <UCard v-if="selectedBuildingId">
+    <UCard v-if="selectedBuildingId" variant="elevated">
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold">Summary</h2>
@@ -507,7 +507,7 @@ onMounted(() => {
           <div v-if="loadingPortfolio" class="flex justify-center py-8">
             <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-gray-400" />
           </div>
-          <UCard v-else-if="portfolioData && portfolioData.buildings.length > 0">
+          <UCard v-else-if="portfolioData && portfolioData.buildings.length > 0" variant="elevated">
             <UTable
               :data="portfolioData.buildings"
               :columns="[
@@ -532,10 +532,10 @@ onMounted(() => {
               </template>
             </UTable>
           </UCard>
-          <UCard v-else-if="portfolioData && portfolioData.buildings.length === 0" class="py-8 text-center text-gray-500">
+          <UCard v-else-if="portfolioData && portfolioData.buildings.length === 0" variant="elevated" class="py-8 text-center text-gray-500">
             No buildings in your portfolio yet.
           </UCard>
-          <UCard v-else class="py-8 text-center text-gray-500">
+          <UCard v-else variant="elevated" class="py-8 text-center text-gray-500">
             Could not load portfolio. Try refreshing.
           </UCard>
         </div>
@@ -544,26 +544,26 @@ onMounted(() => {
       <template #occupancy>
         <div class="space-y-6 pt-4">
           <div v-if="occupancyData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Total units</p>
               <p class="mt-1 text-2xl font-bold">{{ occupancyData.totalUnits }}</p>
             </UCard>
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Occupancy rate</p>
               <p class="mt-1 text-2xl font-bold text-success-600">{{ occupancyData.occupancyRate }}%</p>
             </UCard>
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Vacant</p>
               <p class="mt-1 text-2xl font-bold text-warning-600">{{ occupancyData.vacantUnits }}</p>
             </UCard>
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Lost rent / month</p>
               <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ occupancyData.lostRentPerMonth.toLocaleString() }}</p>
             </UCard>
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <UCard v-if="occupancyChartData">
+            <UCard v-if="occupancyChartData" variant="elevated">
               <template #header>
                 <h3 class="text-lg font-semibold">Distribution</h3>
               </template>
@@ -571,7 +571,7 @@ onMounted(() => {
                 <Doughnut :data="occupancyChartData" :options="{ maintainAspectRatio: false }" />
               </div>
             </UCard>
-            <UCard v-if="occupancyTrendChartData">
+            <UCard v-if="occupancyTrendChartData" variant="elevated">
               <template #header>
                 <h3 class="text-lg font-semibold">Occupancy trend (6 months)</h3>
               </template>
@@ -584,7 +584,7 @@ onMounted(() => {
             </UCard>
           </div>
 
-          <UCard v-if="occupancyData">
+          <UCard v-if="occupancyData" variant="elevated">
             <template #header>
               <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold">Vacant Units ({{ occupancyData.vacantUnits }})</h3>
@@ -615,7 +615,7 @@ onMounted(() => {
 
       <template #revenue>
         <div class="space-y-6 pt-4">
-          <UCard>
+          <UCard variant="elevated">
             <div class="flex flex-wrap gap-4 items-end">
               <UFormField label="Start Date" class="flex-1 min-w-35">
                 <UInput v-model="revenueStartDate" type="date" />
@@ -628,26 +628,26 @@ onMounted(() => {
           </UCard>
 
           <div v-if="revenueData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Expected (period)</p>
               <p class="mt-1 text-2xl font-bold text-gray-900">ETB {{ revenueData.expectedRent.toLocaleString() }}</p>
             </UCard>
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Collected (period)</p>
               <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ revenueData.collectedRent.toLocaleString() }}</p>
             </UCard>
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Collection rate</p>
               <p class="mt-1 text-2xl font-bold">{{ revenueData.collectionRate }}%</p>
             </UCard>
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Outstanding</p>
               <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ revenueData.outstanding.amount.toLocaleString() }}</p>
               <p class="text-xs text-gray-500">{{ revenueData.outstanding.count }} period(s)</p>
             </UCard>
           </div>
 
-          <UCard v-if="revenueByMonthChartData">
+          <UCard v-if="revenueByMonthChartData" variant="elevated">
             <template #header>
               <h3 class="text-lg font-semibold">Revenue by month</h3>
             </template>
@@ -660,21 +660,21 @@ onMounted(() => {
           </UCard>
 
           <div v-if="revenueData && revenueData.outstanding.amount > 0" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <UCard class="border-l-4 border-l-amber-400">
+            <UCard variant="elevated" class="border-l-4 border-l-amber-400">
               <p class="text-sm text-gray-600">0–30 days overdue</p>
               <p class="mt-1 text-xl font-bold">ETB {{ revenueData.outstanding.aging.days0_30.toLocaleString() }}</p>
             </UCard>
-            <UCard class="border-l-4 border-l-orange-500">
+            <UCard variant="elevated" class="border-l-4 border-l-orange-500">
               <p class="text-sm text-gray-600">31–60 days overdue</p>
               <p class="mt-1 text-xl font-bold">ETB {{ revenueData.outstanding.aging.days31_60.toLocaleString() }}</p>
             </UCard>
-            <UCard class="border-l-4 border-l-red-500">
+            <UCard variant="elevated" class="border-l-4 border-l-red-500">
               <p class="text-sm text-gray-600">61+ days overdue</p>
               <p class="mt-1 text-xl font-bold">ETB {{ revenueData.outstanding.aging.days61Plus.toLocaleString() }}</p>
             </UCard>
           </div>
 
-          <UCard v-if="revenueData">
+          <UCard v-if="revenueData" variant="elevated">
             <template #header>
               <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold">Outstanding payments</h3>
@@ -720,25 +720,25 @@ onMounted(() => {
       <template #tenants>
         <div class="space-y-6 pt-4">
           <div v-if="tenantData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Total / Active / Inactive</p>
               <p class="mt-1 text-xl font-bold">{{ tenantData.totalTenants }} / {{ tenantData.activeTenants }} / {{ tenantData.inactiveTenants }}</p>
             </UCard>
-            <UCard class="border-l-4 border-l-red-500">
+            <UCard variant="elevated" class="border-l-4 border-l-red-500">
               <p class="text-sm text-gray-600">Expiring in 30 days</p>
               <p class="mt-1 text-2xl font-bold text-error-600">{{ tenantData.expiringIn30.count }}</p>
             </UCard>
-            <UCard class="border-l-4 border-l-amber-500">
+            <UCard variant="elevated" class="border-l-4 border-l-amber-500">
               <p class="text-sm text-gray-600">Expiring in 60 days</p>
               <p class="mt-1 text-2xl font-bold text-warning-600">{{ tenantData.expiringIn60.count }}</p>
             </UCard>
-            <UCard class="border-l-4 border-l-blue-400">
+            <UCard variant="elevated" class="border-l-4 border-l-blue-400">
               <p class="text-sm text-gray-600">Expiring in 90 days</p>
               <p class="mt-1 text-2xl font-bold">{{ tenantData.expiringIn90.count }}</p>
             </UCard>
           </div>
 
-          <UCard v-if="tenantData">
+          <UCard v-if="tenantData" variant="elevated">
             <template #header>
               <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold">Lease expirations (next 90 days)</h3>
@@ -776,7 +776,7 @@ onMounted(() => {
             />
           </UCard>
 
-          <UCard v-if="tenantData">
+          <UCard v-if="tenantData" variant="elevated">
             <template #header>
               <h3 class="text-lg font-semibold">Payment History Summary</h3>
             </template>
@@ -808,11 +808,11 @@ onMounted(() => {
             <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-gray-400" />
           </div>
           <div v-else-if="maintenanceData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <UCard>
+            <UCard variant="elevated">
               <p class="text-sm text-gray-600">Open requests</p>
               <p class="mt-1 text-2xl font-bold">{{ maintenanceData.openCount }}</p>
             </UCard>
-            <UCard v-for="(count, priority) in maintenanceData.byPriority" :key="priority">
+            <UCard v-for="(count, priority) in maintenanceData.byPriority" :key="priority" variant="elevated">
               <p class="text-sm text-gray-600 capitalize">{{ priority }}</p>
               <p class="mt-1 text-xl font-bold">{{ count }}</p>
             </UCard>

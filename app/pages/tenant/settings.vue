@@ -81,7 +81,7 @@ async function onPasswordSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
       <p class="text-gray-500 mt-1">Manage your account email and password</p>
     </div>
 
-    <UCard>
+    <UCard variant="elevated">
       <template #header>
         <h2 class="text-lg font-semibold">Change email</h2>
       </template>
@@ -95,7 +95,7 @@ async function onPasswordSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
       </UForm>
     </UCard>
 
-    <UCard>
+    <UCard variant="elevated">
       <template #header>
         <h2 class="text-lg font-semibold">Change password</h2>
       </template>
