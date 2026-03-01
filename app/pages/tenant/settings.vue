@@ -42,7 +42,7 @@ async function onEmailSubmit(event: FormSubmitEvent<{ email: string }>) {
     if (user.value && 'email' in user.value) {
       const updated = { ...user.value, email: event.data.email }
       user.value = updated
-      userCookie.value = updated
+      if (userCookie) userCookie.value = updated
     }
     toast.add({ title: 'Email updated successfully', color: 'success' })
   } catch (error: any) {

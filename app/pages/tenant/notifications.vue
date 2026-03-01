@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { PageInfo } from '~/types'
 
+definePageMeta({
+  layout: 'tenant',
+})
+
 const router = useRouter()
 const { notifications, loading, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
 

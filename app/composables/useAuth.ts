@@ -207,6 +207,7 @@ export const useAuth = () => {
 
   return {
     user,
+    userCookie,
     userType,
     token,
     refreshToken,

@@ -1,7 +1,11 @@
 <script setup lang="ts">
-const { user, logout } = useAuth()
+const { user, userType, logout } = useAuth()
 
-const userMenuItems = [
+const settingsPath = computed(() =>
+  userType.value === 'tenant' ? '/tenant/settings' : '/dashboard/settings'
+)
+
+const userMenuItems = computed(() => [
   [{
     label: user.value?.email || '',
     slot: 'account',
@@ -10,14 +14,14 @@ const userMenuItems = [
   [{
     label: 'Settings',
     icon: 'i-heroicons-cog-6-tooth',
-    onSelect: () => navigateTo('/dashboard/settings')
+    onSelect: () => navigateTo(settingsPath.value)
   }],
   [{
     label: 'Logout',
     icon: 'i-heroicons-arrow-right-on-rectangle',
     onSelect: logout
   }]
-]
+])
 </script>
 
 <template>
