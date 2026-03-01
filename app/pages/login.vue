@@ -140,6 +140,9 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
           <UFormField label="Password" name="password" required>
             <UInput v-model="state.password" type="password" placeholder="Enter your password"
               icon="i-heroicons-lock-closed" size="lg" :ui="{ root: 'w-full' }" />
+            <template v-if="selectedUserType?.value === 'tenant'" #hint>
+              <span class="text-xs text-gray-500">If you have accounts at more than one building, use the password for the building you want to sign in to.</span>
+            </template>
           </UFormField>
 
           <div class="flex items-center justify-between">
