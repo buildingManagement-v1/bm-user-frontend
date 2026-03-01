@@ -14,6 +14,9 @@ export enum ActivityEntityType {
   MANAGER = "manager",
   INVOICE = "invoice",
   SUBSCRIPTION_PLAN = "subscription_plan",
+  PARKING_REQUEST = "parking_request",
+  PAYMENT_REQUEST = "payment_request",
+  NOTIFICATION = "notification",
 }
 
 export interface ActivityLog {

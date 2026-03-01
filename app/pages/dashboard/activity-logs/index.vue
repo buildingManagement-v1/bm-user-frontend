@@ -35,6 +35,9 @@ const entityTypeOptions = [
   { value: 'maintenance_request', label: 'Maintenance Request' },
   { value: 'manager', label: 'Manager' },
   { value: 'invoice', label: 'Invoice' },
+  { value: 'parking_request', label: 'Parking Request' },
+  { value: 'payment_request', label: 'Payment Request' },
+  { value: 'notification', label: 'Notification' },
 ]
 
 const columns: TableColumn<ActivityLog>[] = [
