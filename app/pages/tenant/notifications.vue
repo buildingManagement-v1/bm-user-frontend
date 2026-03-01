@@ -1,19 +1,29 @@
 <script setup lang="ts">
-definePageMeta({
-  layout: 'tenant',
-})
+import type { PageInfo } from '~/types'
 
 const router = useRouter()
 const { notifications, loading, fetchNotifications, markAsRead, markAllAsRead, deleteNotification } = useNotifications()
 
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
 const currentPage = ref(1)
-const totalPages = ref(1)
 
 async function loadNotifications(page = 1) {
-  const response = await fetchNotifications(page, 20)
-  const info = response.meta?.page_info
-  currentPage.value = info?.current_page ?? page
-  totalPages.value = info?.total_pages ?? 1
+  const response = await fetchNotifications(page, limit.value)
+  pageInfo.value = response.meta?.page_info ?? null
+  currentPage.value = pageInfo.value?.current_page ?? page
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  loadNotifications(page)
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  loadNotifications(1)
 }
 
 function getTimeAgo(date: string) {
@@ -57,6 +67,17 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        v-if="pageInfo"
+        :page-info="pageInfo"
+        item-label="notifications"
+        :current-count="notifications.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
+
       <div v-if="loading" class="flex justify-center py-12">
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
       </div>
@@ -73,7 +94,7 @@ onMounted(() => {
           @click="handleNotificationClick(notification)">
           <div class="flex items-start justify-between gap-4">
             <div class="flex items-start gap-3 flex-1">
-              <div class="flex-shrink-0 mt-1">
+              <div class="shrink-0 mt-1">
                 <div v-if="!notification.isRead" class="w-2.5 h-2.5 bg-primary-500 rounded-full" />
                 <div v-else class="w-2.5 h-2.5" />
               </div>
@@ -91,19 +112,5 @@ onMounted(() => {
         </div>
       </div>
     </UCard>
-
-    <div v-if="totalPages > 1" class="flex justify-center gap-2">
-      <UButton :disabled="currentPage === 1" color="neutral" variant="outline"
-        @click="loadNotifications(currentPage - 1)">
-        Previous
-      </UButton>
-      <span class="flex items-center px-4 text-gray-600">
-        Page {{ currentPage }} of {{ totalPages }}
-      </span>
-      <UButton :disabled="currentPage === totalPages" color="neutral" variant="outline"
-        @click="loadNotifications(currentPage + 1)">
-        Next
-      </UButton>
-    </div>
   </div>
 </template>

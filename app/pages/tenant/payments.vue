@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 import type { ApiResponse } from '~/types'
+import type { PaginatedResponse } from '~/types'
+import type { PageInfo } from '~/types'
 import type { Payment } from '~/types/payment'
 
 definePageMeta({
@@ -12,9 +14,13 @@ const toast = useToast()
 
 const payments = ref<Payment[]>([])
 const loading = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 
 const columns: TableColumn<Payment>[] = [
   { accessorKey: 'paymentDate', header: 'Date' },
+  { accessorKey: 'unit', header: 'Unit' },
   { accessorKey: 'type', header: 'Type' },
   { accessorKey: 'amount', header: 'Amount' },
   { accessorKey: 'status', header: 'Status' },
@@ -25,13 +31,32 @@ const columns: TableColumn<Payment>[] = [
 async function fetchPayments() {
   loading.value = true
   try {
-    const response = await api<ApiResponse<Payment[]>>('/v1/tenant/payment-history')
-    payments.value = response.data
+    const offset = (currentPage.value - 1) * limit.value
+    const params = new URLSearchParams()
+    params.set('limit', String(limit.value))
+    params.set('offset', String(offset))
+    const response = await api<PaginatedResponse<Payment[]>>(
+      `/v1/tenant/payment-history?${params.toString()}`
+    )
+    payments.value = response.data ?? []
+    pageInfo.value = response.meta?.page_info ?? null
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch payments', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchPayments()
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchPayments()
 }
 
 async function downloadReceipt(invoiceId: string) {
@@ -69,9 +94,23 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="payments"
+        :current-count="payments.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
       <UTable :data="payments" :columns="columns" :loading="loading">
         <template #paymentDate-cell="{ row }">
           {{ new Date(row.original.paymentDate).toLocaleDateString() }}
+        </template>
+
+        <template #unit-cell="{ row }">
+          <span v-if="row.original.unit">{{ row.original.unit.unitNumber }}</span>
+          <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #type-cell="{ row }">
@@ -96,7 +135,7 @@ onMounted(() => {
 
         <template #actions-cell="{ row }">
           <UButton v-if="row.original.invoice" size="xs" color="primary" variant="ghost"
-            @click="downloadReceipt(row.original.invoice.id)">
+            @click="downloadReceipt(row.original.invoice!.id)">
             <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
           </UButton>
           <span v-else class="text-gray-400">-</span>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { ApiResponse } from '~/types'
+import type { PaginatedResponse } from '~/types'
+import type { PageInfo } from '~/types'
 import type { MaintenanceRequest } from '~/types/maintenance-request'
 
 definePageMeta({
@@ -13,9 +14,13 @@ const toast = useToast()
 const requests = ref<MaintenanceRequest[]>([])
 const loading = ref(false)
 const isCreateModalOpen = ref(false)
+const pageInfo = ref<PageInfo | null>(null)
+const limit = ref(20)
+const currentPage = ref(1)
 
 const columns: TableColumn<MaintenanceRequest>[] = [
   { accessorKey: 'title', header: 'Title' },
+  { accessorKey: 'unit', header: 'Unit' },
   { accessorKey: 'priority', header: 'Priority' },
   { accessorKey: 'status', header: 'Status' },
   { accessorKey: 'createdAt', header: 'Submitted' },
@@ -25,13 +30,32 @@ const columns: TableColumn<MaintenanceRequest>[] = [
 async function fetchRequests() {
   loading.value = true
   try {
-    const response = await api<ApiResponse<MaintenanceRequest[]>>('/v1/tenant/maintenance-requests')
-    requests.value = response.data
+    const offset = (currentPage.value - 1) * limit.value
+    const params = new URLSearchParams()
+    params.set('limit', String(limit.value))
+    params.set('offset', String(offset))
+    const response = await api<PaginatedResponse<MaintenanceRequest[]>>(
+      `/v1/tenant/maintenance-requests?${params.toString()}`
+    )
+    requests.value = response.data ?? []
+    pageInfo.value = response.meta?.page_info ?? null
   } catch (error: any) {
     toast.add({ title: 'Failed to fetch requests', description: error.message, color: 'error' })
   } finally {
     loading.value = false
   }
+}
+
+function goToPage(page: number) {
+  if (page < 1 || (pageInfo.value && page > pageInfo.value.total_pages)) return
+  currentPage.value = page
+  fetchRequests()
+}
+
+function onLimitChange(newLimit: number) {
+  limit.value = newLimit
+  currentPage.value = 1
+  fetchRequests()
 }
 
 function handleSuccess() {
@@ -58,6 +82,15 @@ onMounted(() => {
     </div>
 
     <UCard>
+      <PaginationBar
+        :page-info="pageInfo"
+        item-label="requests"
+        :current-count="requests.length"
+        :limit="limit"
+        show-limit-selector
+        @go-to-page="goToPage"
+        @update:limit="onLimitChange"
+      />
       <UTable :data="requests" :columns="columns" :loading="loading">
         <template #priority-cell="{ row }">
           <UBadge
@@ -65,6 +98,11 @@ onMounted(() => {
             variant="subtle" class="capitalize">
             {{ row.original.priority }}
           </UBadge>
+        </template>
+
+        <template #unit-cell="{ row }">
+          <span v-if="row.original.unit">{{ row.original.unit.unitNumber }}</span>
+          <span v-else class="text-gray-400">-</span>
         </template>
 
         <template #status-cell="{ row }">
