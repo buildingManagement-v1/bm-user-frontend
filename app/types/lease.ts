@@ -13,6 +13,7 @@ export interface Lease {
   endDate: string;
   rentAmount: number;
   securityDeposit?: number;
+  carsAllowed?: number;
   status: LeaseStatus;
   terms?: any;
   createdAt: string;
@@ -36,6 +37,7 @@ export interface CreateLeaseRequest {
   endDate: string;
   rentAmount: number;
   securityDeposit?: number;
+  carsAllowed?: number;
   status?: LeaseStatus;
   terms?: any;
 }
@@ -45,6 +47,7 @@ export interface UpdateLeaseRequest {
   endDate?: string;
   rentAmount?: number;
   securityDeposit?: number;
+  carsAllowed?: number;
   status?: LeaseStatus;
   terms?: any;
 }

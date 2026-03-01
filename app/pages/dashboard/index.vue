@@ -115,45 +115,53 @@ onMounted(() => {
         :loading="loadingBuildings" class="w-64" />
     </div>
 
-    <div v-if="stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-if="stats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <UCard>
-        <div class="flex items-center justify-between">
+        <div class="flex items-start justify-between">
           <div>
             <p class="text-sm text-gray-600">Total Tenants</p>
             <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats.totalTenants }}</p>
           </div>
-          <UIcon name="i-heroicons-users" class="w-12 h-12 text-primary-500" />
+          <div class="flex items-center justify-center bg-primary-50 rounded-lg p-2">
+            <UIcon name="i-heroicons-users" class="w-6 h-6 text-primary-500" />
+          </div>
         </div>
       </UCard>
 
       <UCard>
-        <div class="flex items-center justify-between">
+        <div class="flex justify-between items-start">
           <div>
             <p class="text-sm text-gray-600">Occupancy Rate</p>
             <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats.occupancyRate }}%</p>
             <p class="text-xs text-gray-500 mt-1">{{ stats.occupiedUnits }} / {{ stats.totalUnits }} units</p>
           </div>
-          <UIcon name="i-heroicons-building-office-2" class="w-12 h-12 text-success-500" />
+          <div class="flex items-center justify-center bg-success-50 rounded-lg p-2">
+            <UIcon name="i-heroicons-building-office-2" class="w-6 h-6 text-success-500" />
+          </div>
         </div>
       </UCard>
 
       <UCard>
-        <div class="flex items-center justify-between">
+        <div class="flex justify-between items-start">
           <div>
             <p class="text-sm text-gray-600">Revenue This Month</p>
             <p class="text-2xl font-bold text-gray-900 mt-1">ETB {{ stats.revenueThisMonth.toLocaleString() }}</p>
           </div>
-          <UIcon name="i-heroicons-banknotes" class="w-12 h-12 text-warning-500" />
+          <div class="flex items-center justify-center bg-warning-50 rounded-lg p-2">
+            <UIcon name="i-heroicons-banknotes" class="w-6 h-6 text-warning-500" />
+          </div>
         </div>
       </UCard>
 
       <UCard>
-        <div class="flex items-center justify-between">
+        <div class="flex items-start justify-between">
           <div>
             <p class="text-sm text-gray-600">Pending Maintenance</p>
             <p class="text-2xl font-bold text-gray-900 mt-1">{{ stats.pendingMaintenanceRequests }}</p>
           </div>
-          <UIcon name="i-heroicons-wrench-screwdriver" class="w-12 h-12 text-error-500" />
+          <div class="flex items-center justify-center bg-error-50 rounded-lg p-2">
+            <UIcon name="i-heroicons-wrench-screwdriver" class="w-6 h-6 text-error-500" />
+          </div>
         </div>
       </UCard>
     </div>
@@ -176,7 +184,7 @@ onMounted(() => {
         </template>
 
         <template #months-cell="{ row }">
-          <span>{{ row.original.months.map(m => formatMonth(m)).join(', ') }}</span>
+          <span>{{row.original.months.map(m => formatMonth(m)).join(', ')}}</span>
         </template>
 
         <template #totalAmount-cell="{ row }">

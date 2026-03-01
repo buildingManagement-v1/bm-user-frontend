@@ -27,6 +27,7 @@ const state = reactive<{
   endDate: string
   rentAmount: number | string
   securityDeposit?: number | string
+  carsAllowed?: number | string
   status: LeaseStatus
 }>({
   tenantId: props.tenantId,
@@ -35,6 +36,7 @@ const state = reactive<{
   endDate: props.lease?.endDate ? new Date(props.lease.endDate).toISOString().split('T')[0] || '' : '',
   rentAmount: props.lease?.rentAmount || 0,
   securityDeposit: props.lease?.securityDeposit || '',
+  carsAllowed: props.lease?.carsAllowed ?? '',
   status: props.lease?.status as LeaseStatus || 'active',
 })
 
@@ -100,12 +102,14 @@ function sanitizeOptionalNumber(body: Record<string, unknown>, key: string) {
 function buildCreateBody(data: CreateLeaseSchema) {
   const body: Record<string, unknown> = { ...data }
   sanitizeOptionalNumber(body, 'securityDeposit')
+  sanitizeOptionalNumber(body, 'carsAllowed')
   return body
 }
 
 function buildUpdateBody(data: Omit<CreateLeaseSchema, 'tenantId' | 'unitId'>) {
   const body: Record<string, unknown> = { ...data, status: data.status }
   sanitizeOptionalNumber(body, 'securityDeposit')
+  sanitizeOptionalNumber(body, 'carsAllowed')
   return body
 }
 
@@ -199,6 +203,11 @@ onMounted(() => {
         <UInput v-model.number="state.securityDeposit" type="number" placeholder="0.00" :ui="{ root: 'w-full' }" />
       </UFormField>
     </div>
+
+
+    <UFormField label="Cars allowed (parking)" name="carsAllowed">
+      <UInput v-model.number="state.carsAllowed" type="number" min="0" placeholder="0" :ui="{ root: 'w-full' }" />
+    </UFormField>
 
     <UFormField v-if="mode === 'edit'" label="Status" name="status">
       <USelectMenu v-model="selectedStatus" :items="statusOptions" placeholder="Select status" class="w-full" />

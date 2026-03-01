@@ -9,3 +9,4 @@ export * from "./dashboard";
 export * from "./activity-log";
 export * from "./subscription";
 export * from "./notification";
+export * from "./parking";

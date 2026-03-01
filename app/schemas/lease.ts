@@ -8,6 +8,7 @@ export const createLeaseSchema = z.object({
   endDate: z.string().min(1, "End date is required"),
   rentAmount: z.coerce.number().positive("Rent amount must be greater than 0"),
   securityDeposit: z.coerce.number().positive().optional().or(z.literal("")),
+  carsAllowed: z.coerce.number().int().min(0).optional().or(z.literal("")),
   status: z.nativeEnum(LeaseStatus).optional(),
 });
 
@@ -24,6 +25,7 @@ export const updateLeaseSchema = z.object({
     .optional()
     .or(z.literal(""))
     .or(z.undefined()),
+  carsAllowed: z.coerce.number().int().min(0).optional().or(z.literal("")).or(z.undefined()),
   status: z.nativeEnum(LeaseStatus).optional(),
 });
 
