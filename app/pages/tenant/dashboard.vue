@@ -49,10 +49,23 @@ interface RentStatusItem {
   }
 }
 
+interface UpcomingPayment {
+  id: string
+  month: string
+  dueLabel: string
+  amount: number
+  status: 'unpaid' | 'overdue'
+  unitNumber: string
+  unitFloor?: number
+  leaseId: string
+}
+
 const profile = ref<TenantProfile | null>(null)
 const rentStatusList = ref<RentStatusItem[]>([])
+const upcomingPayments = ref<UpcomingPayment[]>([])
 const profileLoading = ref(false)
 const rentLoading = ref(false)
+const upcomingLoading = ref(false)
 
 async function fetchProfile() {
   profileLoading.value = true
@@ -78,9 +91,22 @@ async function fetchRentStatus() {
   }
 }
 
+async function fetchUpcomingPayments() {
+  upcomingLoading.value = true
+  try {
+    const response = await api<ApiResponse<UpcomingPayment[]>>('/v1/tenant/upcoming-payments?limit=10')
+    upcomingPayments.value = Array.isArray(response.data) ? response.data : []
+  } catch (error: any) {
+    toast.add({ title: 'Failed to fetch upcoming payments', description: error.message, color: 'error' })
+  } finally {
+    upcomingLoading.value = false
+  }
+}
+
 onMounted(() => {
   fetchProfile()
   fetchRentStatus()
+  fetchUpcomingPayments()
 })
 </script>
 
@@ -174,5 +200,55 @@ onMounted(() => {
         <p class="text-gray-500">No active lease found</p>
       </UCard>
     </div>
+
+    <!-- Upcoming payments -->
+    <UCard v-if="rentStatusList.length > 0">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">Upcoming payments</h2>
+          <NuxtLink to="/tenant/payment-requests" class="text-sm text-primary-600 hover:underline">
+            Submit payment
+          </NuxtLink>
+        </div>
+      </template>
+
+      <div v-if="upcomingLoading" class="animate-pulse space-y-3">
+        <div v-for="i in 3" :key="i" class="h-12 bg-gray-200 rounded"></div>
+      </div>
+
+      <div v-else-if="upcomingPayments.length === 0" class="text-gray-500 py-4">
+        <p>No upcoming or overdue rent. You're all set for now.</p>
+      </div>
+
+      <div v-else class="space-y-3">
+        <div
+          v-for="item in upcomingPayments"
+          :key="item.id"
+          class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0"
+        >
+          <div>
+            <p class="font-medium text-gray-900">
+              {{ item.dueLabel }}
+              <span class="text-gray-500 font-normal">
+                · Unit {{ item.unitNumber }}
+                <span v-if="item.unitFloor"> (Floor {{ item.unitFloor }})</span>
+              </span>
+            </p>
+            <UBadge
+              v-if="item.status === 'overdue'"
+              color="error"
+              variant="subtle"
+              size="xs"
+              class="mt-1"
+            >
+              Overdue
+            </UBadge>
+          </div>
+          <p class="text-lg font-semibold text-primary-600">
+            ETB {{ item.amount.toLocaleString() }}
+          </p>
+        </div>
+      </div>
+    </UCard>
   </div>
 </template>
