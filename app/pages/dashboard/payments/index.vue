@@ -178,15 +178,8 @@ watch(selectedBuildingId, () => {
     </UCard>
 
     <UCard variant="elevated">
-      <PaginationBar
-        :page-info="pageInfo"
-        item-label="payments"
-        :current-count="payments.length"
-        :limit="limit"
-        show-limit-selector
-        @go-to-page="goToPage"
-        @update:limit="onLimitChange"
-      />
+      <PaginationBar :page-info="pageInfo" item-label="payments" :current-count="payments.length" :limit="limit"
+        show-limit-selector @go-to-page="goToPage" @update:limit="onLimitChange" />
       <UTable :data="payments" :columns="columns" :loading="loading">
         <template #tenant-cell="{ row }">
           <span>{{ row.original.tenant.name }}</span>
@@ -194,12 +187,10 @@ watch(selectedBuildingId, () => {
 
         <template #unit-cell="{ row }">
           <span v-if="row.original.unit">
-            {{ row.original.unit.unitNumber }}
-            <span v-if="row.original.unit.floor" class="text-gray-500">
-              (Floor {{ row.original.unit.floor }})
-            </span>
+            Unit {{ row.original.unit.unitNumber }}
+            <span v-if="row.original.unit.floor != null" class="text-zinc-500"> (Floor {{ row.original.unit.floor }})</span>
           </span>
-          <span v-else class="text-gray-400">N/A</span>
+          <span v-else class="text-zinc-400">-</span>
         </template>
 
         <template #amount-cell="{ row }">

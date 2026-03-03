@@ -109,7 +109,10 @@ onMounted(() => {
         </template>
 
         <template #unit-cell="{ row }">
-          <span v-if="row.original.unit">{{ row.original.unit.unitNumber }}</span>
+          <span v-if="row.original.unit">
+            Unit {{ row.original.unit.unitNumber }}
+            <span v-if="row.original.unit.floor != null" class="text-gray-500"> (Floor {{ row.original.unit.floor }})</span>
+          </span>
           <span v-else class="text-gray-400">-</span>
         </template>
 
