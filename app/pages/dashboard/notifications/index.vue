@@ -77,9 +77,10 @@ onMounted(() => {
         <p class="text-gray-600">You're all caught up!</p>
       </div>
 
-      <div v-else class="divide-y">
+      <div v-else class="space-y-2">
         <div v-for="notification in notifications" :key="notification.id"
-          class="p-4 hover:bg-gray-50 transition cursor-pointer" :class="{ 'bg-blue-50': !notification.isRead }"
+          class="p-4 transition cursor-pointer rounded-2xl"
+          :class="!notification.isRead ? 'bg-blue-50 hover:bg-blue-100' : 'bg-gray-50 hover:bg-gray-100 '"
           @click="handleNotificationClick(notification)">
           <div class="flex items-start justify-between gap-4">
             <div class="flex items-start gap-3 flex-1">
@@ -91,12 +92,10 @@ onMounted(() => {
               <div class="flex-1 min-w-0">
                 <p class="font-semibold text-gray-900">{{ notification.title }}</p>
                 <p class="text-gray-600 mt-1">{{ notification.message }}</p>
-                <p class="text-sm text-gray-500 mt-2">{{ getTimeAgo(notification.createdAt) }}</p>
               </div>
             </div>
 
-            <!-- <UButton size="xs" color="error" variant="ghost" icon="i-heroicons-trash"
-              @click.stop="handleDelete(notification.id)" /> -->
+            <p class="text-sm text-gray-500 mt-2">{{ getTimeAgo(notification.createdAt) }}</p>
           </div>
         </div>
       </div>

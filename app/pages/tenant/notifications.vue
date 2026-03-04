@@ -85,9 +85,10 @@ onMounted(() => {
         <p class="text-gray-600">You're all caught up!</p>
       </div>
 
-      <div v-else class="divide-y">
+      <div v-else class="space-y-1">
         <div v-for="notification in notifications" :key="notification.id"
-          class="p-4 hover:bg-gray-50 transition cursor-pointer" :class="{ 'bg-blue-50': !notification.isRead }"
+          class="p-4 transition cursor-pointer rounded-2xl"
+          :class="!notification.isRead ? 'bg-blue-50 hover:bg-blue-100' : 'bg-gray-50 hover:bg-gray-100 '"
           @click="handleNotificationClick(notification)">
           <div class="flex items-start justify-between gap-4">
             <div class="flex items-start gap-3 flex-1">

@@ -127,10 +127,16 @@ const occupancyTrendChartData = computed(() => {
     datasets: [{
       label: 'Occupancy %',
       data: byMonth.map((r) => r.occupancyRate),
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderColor: '#8b5cf6',
+      backgroundColor: 'rgba(139, 92, 246, 0.12)',
       fill: true,
-      tension: 0.2,
+      tension: 0.4,
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+      pointBackgroundColor: '#8b5cf6',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1,
     }],
   }
 })
@@ -149,15 +155,27 @@ const revenueByMonthChartData = computed(() => {
         data: revenueData.value.revenueByMonth.map(r => r.expected),
         borderColor: '#94a3b8',
         backgroundColor: 'transparent',
-        tension: 0.2,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#94a3b8',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
       },
       {
         label: 'Collected',
         data: revenueData.value.revenueByMonth.map(r => r.collected),
         borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
         fill: true,
-        tension: 0.2,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#10b981',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1,
       },
     ],
   }
@@ -449,55 +467,86 @@ onMounted(() => {
         :loading="loadingBuildings" class="w-64" />
     </div>
 
-    <!-- Owner summary (Phase 1) -->
-    <UCard v-if="selectedBuildingId" variant="elevated">
+    <!-- Summary: card-style stats with icons and accents -->
+    <UCard v-if="selectedBuildingId" variant="elevated" class="overflow-hidden">
       <template #header>
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold">Summary</h2>
-          <span v-if="summaryData" class="text-sm text-gray-500">{{ summaryPeriodLabel(summaryData) }}</span>
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40">
+              <UIcon name="i-heroicons-chart-bar" class="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            </div>
+            <div>
+              <h2 class="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Summary</h2>
+              <span v-if="summaryData" class="text-sm text-zinc-500">{{ summaryPeriodLabel(summaryData) }}</span>
+            </div>
+          </div>
         </div>
       </template>
-      <div v-if="loadingSummary" class="flex justify-center py-8">
-        <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-gray-400" />
+      <div v-if="loadingSummary" class="flex justify-center py-12">
+        <UIcon name="i-heroicons-arrow-path" class="h-8 w-8 animate-spin text-primary-500" />
       </div>
-      <div v-else-if="summaryData" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Occupancy</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900">{{ summaryData.occupancyRate }}%</p>
-          <p class="text-xs text-gray-500">{{ summaryData.occupiedUnits }} / {{ summaryData.totalUnits }} units</p>
-        </div>
-        <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Expected this month</p>
-          <p class="mt-1 text-2xl font-bold text-gray-900">ETB {{ summaryData.expectedRentThisMonth.toLocaleString() }}</p>
-        </div>
-        <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Collected this month</p>
-          <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ summaryData.collectedRentThisMonth.toLocaleString() }}</p>
-          <p class="text-xs text-gray-500">Collection {{ summaryData.collectionRateThisMonth }}%</p>
-        </div>
-        <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Outstanding</p>
-          <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ summaryData.outstandingAmount.toLocaleString() }}</p>
-          <p class="text-xs text-gray-500">{{ summaryData.outstandingCount }} period(s)</p>
-        </div>
-        <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Vacant units</p>
-          <p class="mt-1 text-2xl font-bold text-warning-600">{{ summaryData.vacantCount }}</p>
-        </div>
-        <div class="rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Expiring in 30 days</p>
-          <p class="mt-1 text-2xl font-bold">{{ summaryData.expiringIn30Days }}</p>
-          <p class="text-xs text-gray-500">lease(s)</p>
-        </div>
+      <div v-else-if="summaryData" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4">
+        <UCard variant="elevated">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-building-office-2" class="h-5 w-5 text-primary-500" />
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Occupancy</p>
+          </div>
+          <p class="mt-2 text-2xl font-bold text-primary-500 dark:text-primary-100">{{ summaryData.occupancyRate }}%</p>
+          <p class="text-xs text-zinc-500">{{ summaryData.occupiedUnits }} / {{ summaryData.totalUnits }} units</p>
+        </UCard>
+        <UCard variant="elevated">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-currency-dollar" class="h-5 w-5 text-zinc-500" />
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Expected (month)</p>
+          </div>
+          <p class="mt-2 text-xl font-bold text-indigo-700 dark:text-blue-100">ETB {{
+            summaryData.expectedRentThisMonth.toLocaleString() }}</p>
+        </UCard>
+        <UCard variant="elevated">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-banknotes" class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Collected (month)</p>
+          </div>
+          <p class="mt-2 text-xl font-bold text-emerald-700 dark:text-emerald-400">ETB {{
+            summaryData.collectedRentThisMonth.toLocaleString() }}</p>
+          <p class="text-xs text-zinc-500">Collection {{ summaryData.collectionRateThisMonth }}%</p>
+        </UCard>
+        <UCard variant="elevated">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-exclamation-triangle" class="h-5 w-5 text-red-600 dark:text-red-400" />
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Outstanding</p>
+          </div>
+          <p class="mt-2 text-xl font-bold text-red-700 dark:text-red-400">ETB {{
+            summaryData.outstandingAmount.toLocaleString() }}</p>
+          <p class="text-xs text-zinc-500">{{ summaryData.outstandingCount }} period(s)</p>
+        </UCard>
+        <UCard variant="elevated">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-home" class="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Vacant units</p>
+          </div>
+          <p class="mt-2 text-2xl font-bold text-amber-700 dark:text-amber-400">{{ summaryData.vacantCount }}</p>
+        </UCard>
+        <UCard variant="elevated">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-calendar-days" class="h-5 w-5 text-zinc-500" />
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Expiring ≤30d</p>
+          </div>
+          <p class="mt-2 text-2xl font-bold text-zinc-900 dark:text-zinc-100">{{ summaryData.expiringIn30Days }}</p>
+          <p class="text-xs text-zinc-500">lease(s)</p>
+        </UCard>
       </div>
-      <div v-else class="py-4 text-center text-sm text-gray-500">Select a building to see summary.</div>
-      <p v-if="summaryData?.summaryText" class="mt-4 text-sm text-gray-600 border-t border-gray-200 pt-4">
+      <div v-else class="py-8 text-center text-sm text-zinc-500">Select a building to see summary.</div>
+      <p v-if="summaryData?.summaryText"
+        class="mt-4 text-sm text-zinc-600 dark:text-zinc-400 border-t border-zinc-200 dark:border-zinc-700 pt-4">
         {{ summaryData.summaryText }}
       </p>
     </UCard>
 
-    <div v-if="summaryData && summaryData.openMaintenanceCount > 0" class="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-sm text-amber-800">
-      <span class="font-medium">Open maintenance:</span> {{ summaryData.openMaintenanceCount }} request(s) pending or in progress.
+    <div v-if="summaryData && summaryData.openMaintenanceCount > 0"
+      class="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-sm text-amber-800">
+      <span class="font-medium">Open maintenance:</span> {{ summaryData.openMaintenanceCount }} request(s) pending or in
+      progress.
     </div>
 
     <UTabs :items="tabs">
@@ -508,22 +557,22 @@ onMounted(() => {
             <UIcon name="i-heroicons-arrow-path" class="animate-spin text-2xl text-gray-400" />
           </div>
           <UCard v-else-if="portfolioData && portfolioData.buildings.length > 0" variant="elevated">
-            <UTable
-              :data="portfolioData.buildings"
-              :columns="[
-                { accessorKey: 'name', header: 'Building' },
-                { accessorKey: 'occupancyRate', header: 'Occupancy %' },
-                { accessorKey: 'collectedThisMonth', header: 'Collected (month)' },
-                { accessorKey: 'expectedThisMonth', header: 'Expected (month)' },
-                { accessorKey: 'outstandingAmount', header: 'Outstanding' },
-                { accessorKey: 'vacantCount', header: 'Vacant' },
-                { accessorKey: 'expiringIn30', header: 'Expiring ≤30d' },
-                { accessorKey: 'openMaintenance', header: 'Open maint.' },
-              ]"
-            >
-              <template #collectedThisMonth-cell="{ row }">ETB {{ row.original.collectedThisMonth.toLocaleString() }}</template>
-              <template #expectedThisMonth-cell="{ row }">ETB {{ row.original.expectedThisMonth.toLocaleString() }}</template>
-              <template #outstandingAmount-cell="{ row }">ETB {{ row.original.outstandingAmount.toLocaleString() }}</template>
+            <UTable :data="portfolioData.buildings" :columns="[
+              { accessorKey: 'name', header: 'Building' },
+              { accessorKey: 'occupancyRate', header: 'Occupancy %' },
+              { accessorKey: 'collectedThisMonth', header: 'Collected (month)' },
+              { accessorKey: 'expectedThisMonth', header: 'Expected (month)' },
+              { accessorKey: 'outstandingAmount', header: 'Outstanding' },
+              { accessorKey: 'vacantCount', header: 'Vacant' },
+              { accessorKey: 'expiringIn30', header: 'Expiring ≤30d' },
+              { accessorKey: 'openMaintenance', header: 'Open maint.' },
+            ]">
+              <template #collectedThisMonth-cell="{ row }">ETB {{ row.original.collectedThisMonth.toLocaleString()
+              }}</template>
+              <template #expectedThisMonth-cell="{ row }">ETB {{ row.original.expectedThisMonth.toLocaleString()
+              }}</template>
+              <template #outstandingAmount-cell="{ row }">ETB {{ row.original.outstandingAmount.toLocaleString()
+              }}</template>
               <template #occupancyRate-cell="{ row }">{{ row.original.occupancyRate }}%</template>
               <template #name-cell="{ row }">
                 <UButton variant="link" size="xs" @click="selectBuildingFromPortfolio(row.original.id)">
@@ -532,7 +581,8 @@ onMounted(() => {
               </template>
             </UTable>
           </UCard>
-          <UCard v-else-if="portfolioData && portfolioData.buildings.length === 0" variant="elevated" class="py-8 text-center text-gray-500">
+          <UCard v-else-if="portfolioData && portfolioData.buildings.length === 0" variant="elevated"
+            class="py-8 text-center text-gray-500">
             No buildings in your portfolio yet.
           </UCard>
           <UCard v-else variant="elevated" class="py-8 text-center text-gray-500">
@@ -558,7 +608,8 @@ onMounted(() => {
             </UCard>
             <UCard variant="elevated">
               <p class="text-sm text-gray-600">Lost rent / month</p>
-              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ occupancyData.lostRentPerMonth.toLocaleString() }}</p>
+              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ occupancyData.lostRentPerMonth.toLocaleString()
+              }}</p>
             </UCard>
           </div>
 
@@ -576,10 +627,8 @@ onMounted(() => {
                 <h3 class="text-lg font-semibold">Occupancy trend (6 months)</h3>
               </template>
               <div style="height: 200px;">
-                <Line
-                  :data="occupancyTrendChartData"
-                  :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { min: 0, max: 100 } } }"
-                />
+                <Line :data="occupancyTrendChartData"
+                  :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { min: 0, max: 100 }, x: { grid: { display: false } } }, plugins: { legend: { position: 'top' } } }" />
               </div>
             </UCard>
           </div>
@@ -599,16 +648,9 @@ onMounted(() => {
                 <span class="font-medium">ETB {{ row.original.rentPrice.toLocaleString() }}</span>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoVacant"
-              :page-info="pageInfoVacant"
-              :current-count="paginatedVacant.length"
-              item-label="units"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pageVacant = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoVacant" :page-info="pageInfoVacant" :current-count="paginatedVacant.length"
+              item-label="units" :limit="limitReports" show-limit-selector @go-to-page="pageVacant = $event"
+              @update:limit="limitReports = $event" />
           </UCard>
         </div>
       </template>
@@ -634,7 +676,8 @@ onMounted(() => {
             </UCard>
             <UCard variant="elevated">
               <p class="text-sm text-gray-600">Collected (period)</p>
-              <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ revenueData.collectedRent.toLocaleString() }}</p>
+              <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ revenueData.collectedRent.toLocaleString() }}
+              </p>
             </UCard>
             <UCard variant="elevated">
               <p class="text-sm text-gray-600">Collection rate</p>
@@ -642,7 +685,8 @@ onMounted(() => {
             </UCard>
             <UCard variant="elevated">
               <p class="text-sm text-gray-600">Outstanding</p>
-              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ revenueData.outstanding.amount.toLocaleString() }}</p>
+              <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ revenueData.outstanding.amount.toLocaleString()
+              }}</p>
               <p class="text-xs text-gray-500">{{ revenueData.outstanding.count }} period(s)</p>
             </UCard>
           </div>
@@ -652,10 +696,8 @@ onMounted(() => {
               <h3 class="text-lg font-semibold">Revenue by month</h3>
             </template>
             <div style="height: 280px;">
-              <Line
-                :data="revenueByMonthChartData"
-                :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { beginAtZero: true } } }"
-              />
+              <Line :data="revenueByMonthChartData"
+                :options="{ maintainAspectRatio: false, responsive: true, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }, plugins: { legend: { position: 'top' } } }" />
             </div>
           </UCard>
 
@@ -698,21 +740,16 @@ onMounted(() => {
                 <span class="text-sm text-gray-600">{{ formatMonthKeys(row.original.months) }}</span>
               </template>
               <template #maxDaysOverdue-cell="{ row }">
-                <UBadge :color="row.original.maxDaysOverdue > 60 ? 'error' : row.original.maxDaysOverdue > 30 ? 'warning' : 'neutral'" variant="subtle">
+                <UBadge
+                  :color="row.original.maxDaysOverdue > 60 ? 'error' : row.original.maxDaysOverdue > 30 ? 'warning' : 'neutral'"
+                  variant="subtle">
                   {{ row.original.maxDaysOverdue }} days
                 </UBadge>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoOutstanding"
-              :page-info="pageInfoOutstanding"
-              :current-count="paginatedOutstanding.length"
-              item-label="items"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pageOutstanding = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoOutstanding" :page-info="pageInfoOutstanding"
+              :current-count="paginatedOutstanding.length" item-label="items" :limit="limitReports" show-limit-selector
+              @go-to-page="pageOutstanding = $event" @update:limit="limitReports = $event" />
           </UCard>
         </div>
       </template>
@@ -722,7 +759,8 @@ onMounted(() => {
           <div v-if="tenantData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <UCard variant="elevated">
               <p class="text-sm text-gray-600">Total / Active / Inactive</p>
-              <p class="mt-1 text-xl font-bold">{{ tenantData.totalTenants }} / {{ tenantData.activeTenants }} / {{ tenantData.inactiveTenants }}</p>
+              <p class="mt-1 text-xl font-bold">{{ tenantData.totalTenants }} / {{ tenantData.activeTenants }} / {{
+                tenantData.inactiveTenants }}</p>
             </UCard>
             <UCard variant="elevated" class="border-l-4 border-l-red-500">
               <p class="text-sm text-gray-600">Expiring in 30 days</p>
@@ -764,16 +802,9 @@ onMounted(() => {
                 </UBadge>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoExpirations"
-              :page-info="pageInfoExpirations"
-              :current-count="paginatedExpirations.length"
-              item-label="expirations"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pageExpirations = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoExpirations" :page-info="pageInfoExpirations"
+              :current-count="paginatedExpirations.length" item-label="expirations" :limit="limitReports"
+              show-limit-selector @go-to-page="pageExpirations = $event" @update:limit="limitReports = $event" />
           </UCard>
 
           <UCard v-if="tenantData" variant="elevated">
@@ -788,16 +819,9 @@ onMounted(() => {
                 <span>{{ row.original.lastPayment ? formatDate(row.original.lastPayment) : 'N/A' }}</span>
               </template>
             </UTable>
-            <PaginationBar
-              v-if="pageInfoPaymentHistory"
-              :page-info="pageInfoPaymentHistory"
-              :current-count="paginatedPaymentHistory.length"
-              item-label="tenants"
-              :limit="limitReports"
-              show-limit-selector
-              @go-to-page="pagePaymentHistory = $event"
-              @update:limit="limitReports = $event"
-            />
+            <PaginationBar v-if="pageInfoPaymentHistory" :page-info="pageInfoPaymentHistory"
+              :current-count="paginatedPaymentHistory.length" item-label="tenants" :limit="limitReports"
+              show-limit-selector @go-to-page="pagePaymentHistory = $event" @update:limit="limitReports = $event" />
           </UCard>
         </div>
       </template>

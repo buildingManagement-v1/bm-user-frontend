@@ -35,7 +35,8 @@ export const useAuth = () => {
   const login = async (
     email: string,
     password: string,
-    type: UserType = "user"
+    type: UserType = "user",
+    rememberMe: boolean = true
   ) => {
     try {
       const endpoint =
@@ -49,7 +50,7 @@ export const useAuth = () => {
         `${config.public.apiUrl}${endpoint}`,
         {
           method: "POST",
-          body: { email, password },
+          body: { email, password, rememberMe },
         }
       );
 

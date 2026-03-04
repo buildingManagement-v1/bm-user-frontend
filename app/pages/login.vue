@@ -13,6 +13,7 @@ const toast = useToast()
 const state = reactive({
   email: '',
   password: '',
+  rememberMe: false,
 })
 
 const userTypeOptions = [
@@ -27,7 +28,7 @@ const loading = ref(false)
 async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
   loading.value = true
   try {
-    await login(event.data.email, event.data.password, (selectedUserType.value?.value as UserType) || 'user')
+    await login(event.data.email, event.data.password, (selectedUserType.value?.value as UserType) || 'user', state.rememberMe)
     toast.add({ title: 'Login successful', color: 'success' })
     if (selectedUserType.value?.value === 'tenant') {
       await router.push('/tenant/dashboard')
@@ -141,13 +142,15 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
             <UInput v-model="state.password" type="password" placeholder="Enter your password"
               icon="i-heroicons-lock-closed" size="lg" :ui="{ root: 'w-full' }" />
             <template v-if="selectedUserType?.value === 'tenant'" #hint>
-              <span class="text-xs text-gray-500">If you have accounts at more than one building, use the password for the building you want to sign in to.</span>
+              <span class="text-xs text-gray-500">If you have accounts at more than one building, use the password for
+                the building you want to sign in to.</span>
             </template>
           </UFormField>
 
           <div class="flex items-center justify-between">
             <label class="flex items-center gap-2 cursor-pointer group">
-              <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
+              <input v-model="state.rememberMe" type="checkbox"
+                class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
               <span class="text-sm text-gray-600 group-hover:text-gray-900 transition">Remember me</span>
             </label>
             <NuxtLink to="/forgot-password"
