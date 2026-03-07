@@ -130,7 +130,9 @@ export const useAuth = () => {
     const endpoint =
       userType.value === "user"
         ? "/v1/app/auth/refresh"
-        : "/v1/manager/auth/refresh";
+        : userType.value === "manager"
+          ? "/v1/manager/auth/refresh"
+          : "/v1/tenant/auth/refresh";
 
     const response = await $fetch<ApiResponse<{ accessToken: string }>>(
       `${config.public.apiUrl}${endpoint}`,
