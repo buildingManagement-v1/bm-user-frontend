@@ -184,7 +184,8 @@ async function deleteTenant(id: string) {
     toast.add({ title: 'Tenant deleted successfully', color: 'success' })
     fetchTenants()
   } catch (error: any) {
-    toast.add({ title: 'Failed to delete tenant', description: error.message || '', color: 'error' })
+    const message = error.data?.message || error.message || 'Could not delete tenant'
+    toast.add({ title: 'Failed to delete tenant', description: message, color: 'error' })
   }
 }
 
@@ -199,7 +200,8 @@ async function deleteLease(id: string) {
       fetchTenantLeases(selectedTenant.value.id)
     }
   } catch (error: any) {
-    toast.add({ title: 'Failed to delete lease', description: error.message || '', color: 'error' })
+    const message = error.data?.message || error.message || 'Could not delete lease'
+    toast.add({ title: 'Failed to delete lease', description: message, color: 'error' })
   }
 }
 
