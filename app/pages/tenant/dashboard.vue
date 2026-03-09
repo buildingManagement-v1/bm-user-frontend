@@ -215,7 +215,12 @@ onMounted(() => {
           Welcome back{{ profile?.name ? `, ${profile.name.split(' ')[0]}` : '' }}
         </h1>
         <p class="mt-1.5 text-primary-100 text-sm md:text-base">
-          Here’s an overview of your tenancy and payments.
+          <template v-if="!rentLoading && rentStatusList.length === 0">
+            You’re all set up. Once your manager assigns you to a unit, you’ll see your rent and payments here.
+          </template>
+          <template v-else>
+            Here’s an overview of your tenancy and payments.
+          </template>
         </p>
       </div>
       <div class="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10" />

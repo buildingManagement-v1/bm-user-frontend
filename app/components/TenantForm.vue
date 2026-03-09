@@ -25,7 +25,6 @@ const state = reactive<CreateTenantSchema | UpdateTenantSchema>(
       name: '',
       email: '',
       phone: '',
-      password: '',
     }
     : {
       name: props.tenant?.name || '',
@@ -63,7 +62,7 @@ async function onSubmit(event: FormSubmitEvent<CreateTenantSchema | UpdateTenant
           body: event.data,
         }
       )
-      toast.add({ title: 'Tenant created successfully', color: 'success' })
+      toast.add({ title: 'Tenant created. Login credentials were sent to their email.', color: 'success' })
     } else {
       await buildingApi<ApiResponse<Tenant>>(
         props.buildingId,
@@ -97,6 +96,9 @@ async function onSubmit(event: FormSubmitEvent<CreateTenantSchema | UpdateTenant
 
     <UFormField label="Email" name="email" required>
       <UInput v-model="state.email" type="email" placeholder="john@example.com" :ui="{ root: 'w-full' }" />
+      <template v-if="mode === 'create'" #hint>
+        <span class="text-xs text-zinc-500">A temporary password will be sent to this email.</span>
+      </template>
     </UFormField>
 
     <UFormField label="Phone" name="phone">
@@ -105,11 +107,6 @@ async function onSubmit(event: FormSubmitEvent<CreateTenantSchema | UpdateTenant
 
     <UFormField v-if="mode === 'edit'" label="Status" name="status">
       <USelectMenu v-model="selectedStatus" :items="statusOptions" class="w-full" />
-    </UFormField>
-
-    <UFormField v-if="mode === 'create'" label="Password" name="password" required>
-      <UInput v-model="(state as CreateTenantSchema).password" type="text" placeholder="Enter password"
-        :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <div class="flex gap-2 justify-end pt-4">

@@ -39,7 +39,6 @@ interface RoleOption {
 const state = reactive({
   name: props.manager?.name || '',
   email: props.manager?.email || '',
-  password: '',
   phone: props.manager?.phone || '',
   status: props.manager?.status || 'active',
   buildingAssignments: [] as BuildingRoleAssignment[],
@@ -131,7 +130,7 @@ async function onSubmit(event: FormSubmitEvent<CreateManagerSchema | UpdateManag
         method: 'POST',
         body: event.data,
       })
-      toast.add({ title: 'Manager created successfully', color: 'success' })
+      toast.add({ title: 'Manager created. Login credentials were sent to their email.', color: 'success' })
     } else {
       await api<ApiResponse<Manager>>(`/v1/app/managers/${props.manager!.id}`, {
         method: 'PATCH',
@@ -166,10 +165,9 @@ onMounted(() => {
     <UFormField label="Email" name="email" required>
       <UInput v-model="state.email" type="email" placeholder="manager@example.com" :ui="{ root: 'w-full' }"
         :disabled="mode === 'edit'" />
-    </UFormField>
-
-    <UFormField v-if="mode === 'create'" label="Password" name="password" required>
-      <UInput v-model="state.password" type="password" placeholder="Min 8 characters" :ui="{ root: 'w-full' }" />
+      <template v-if="mode === 'create'" #hint>
+        <span class="text-xs text-zinc-500">A temporary password will be sent to this email.</span>
+      </template>
     </UFormField>
 
     <UFormField label="Phone" name="phone">

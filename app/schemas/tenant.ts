@@ -5,7 +5,6 @@ export const createTenantSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
-  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 export const updateTenantSchema = z.object({

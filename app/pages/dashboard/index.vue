@@ -212,6 +212,32 @@ onMounted(() => {
       <div class="absolute -bottom-12 -right-4 h-32 w-32 rounded-full bg-white/5" />
     </div>
 
+    <!-- Empty state: no buildings yet -->
+    <UCard
+      v-if="!loadingBuildings && buildings.length === 0"
+      variant="elevated"
+      class="overflow-hidden border-2 border-dashed border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/30"
+    >
+      <div class="flex flex-col items-center justify-center py-12 px-6 text-center sm:py-16">
+        <div
+          class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary-100 dark:bg-primary-900/50 ring-4 ring-primary-200/50 dark:ring-primary-800/50"
+        >
+          <UIcon name="i-heroicons-building-office-2" class="h-10 w-10 text-primary-600 dark:text-primary-400" />
+        </div>
+        <h2 class="mt-6 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+          No buildings yet
+        </h2>
+        <p class="mt-2 max-w-sm text-zinc-600 dark:text-zinc-400">
+          Add your first building to start managing units, tenants, and payments from your dashboard.
+        </p>
+        <NuxtLink to="/dashboard/buildings">
+          <UButton color="primary" size="lg" icon="i-heroicons-plus" class="mt-6">
+            Add your first building
+          </UButton>
+        </NuxtLink>
+      </div>
+    </UCard>
+
     <!-- Stats cards -->
     <div v-if="stats" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <UCard variant="elevated" class="overflow-hidden">
