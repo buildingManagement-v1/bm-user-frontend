@@ -51,10 +51,10 @@ function goToRegister() {
 
         <h1 class="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
           Property Management<br />
-          <span class="bg-linear-to-r from-primary-200 to-white bg-clip-text text-transparent">Made Simple</span>
+          <span class="bg-linear-to-r from-primary-200 to-white bg-clip-text">Made Simple</span>
         </h1>
 
-        <p class="text-xl text-primary-100 mb-10 max-w-3xl mx-auto leading-relaxed">
+        <p class="text-xl text-white mb-10 max-w-3xl mx-auto leading-relaxed font-bold">
           The all-in-one platform to manage buildings, track tenants, handle maintenance,
           and grow your property portfolio. Start free, scale as you grow.
         </p>
@@ -66,7 +66,7 @@ function goToRegister() {
               <UIcon name="i-heroicons-arrow-right" class="w-5 h-5" />
             </span>
           </UButton>
-          <div class="flex items-center gap-2 text-white text-sm">
+          <div class="flex items-center gap-2 text-white font-medium text-sm">
             <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-300" />
             <span>No credit card required</span>
           </div>

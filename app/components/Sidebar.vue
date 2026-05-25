@@ -154,7 +154,7 @@ function isActive(itemTo: string) {
 
     <nav class="p-4 space-y-2">
       <NuxtLink v-for="item in navigation" :key="item.to" :to="item.to" :class="[
-        'group relative flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 border ',
+        'group relative flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 border whitespace-nowrap',
         isActive(item.to)
           ? 'bg-primary-50 text-primary-700 border-primary-200'
           : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 border-transparent',

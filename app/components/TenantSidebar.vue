@@ -42,7 +42,7 @@ function isActive(itemTo: string) {
 
     <nav class="p-4 space-y-2">
       <NuxtLink v-for="item in navigation" :key="item.to" :to="item.to" :class="[
-        'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
+        'flex items-center gap-3 px-4 py-3 rounded-lg whitespace-nowrap transition-colors',
         isActive(item.to)
           ? 'bg-primary-50 text-primary-600'
           : 'text-gray-700 hover:bg-gray-100',
