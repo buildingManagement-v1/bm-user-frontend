@@ -25,11 +25,13 @@ const state = reactive<CreateTenantSchema | UpdateTenantSchema>(
       name: '',
       email: '',
       phone: '',
+      tin: '',
     }
     : {
       name: props.tenant?.name || '',
       email: props.tenant?.email || '',
       phone: props.tenant?.phone,
+      tin: props.tenant?.tin,
       status: props.tenant?.status || TenantStatus.ACTIVE,
     }
 )
@@ -103,6 +105,10 @@ async function onSubmit(event: FormSubmitEvent<CreateTenantSchema | UpdateTenant
 
     <UFormField label="Phone" name="phone">
       <UInput v-model="state.phone" type="tel" placeholder="+1 234 567 8900" :ui="{ root: 'w-full' }" />
+    </UFormField>
+
+    <UFormField label="TIN" name="tin">
+      <UInput v-model="state.tin" placeholder="Tax Identification Number (optional)" :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <UFormField v-if="mode === 'edit'" label="Status" name="status">

@@ -5,12 +5,14 @@ export const createTenantSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
+  tin: z.string().optional(),
 });
 
 export const updateTenantSchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   email: z.string().email("Invalid email address").optional(),
   phone: z.string().optional(),
+  tin: z.string().optional(),
   status: z.nativeEnum(TenantStatus).optional(),
 });
 
@@ -18,6 +20,7 @@ export const onboardTenantSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().optional(),
+  tin: z.string().optional(),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")

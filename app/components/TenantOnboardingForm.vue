@@ -20,6 +20,7 @@ const state = reactive<OnboardTenantSchema>({
   name: '',
   email: '',
   phone: '',
+  tin: '',
   password: '',
   unitId: '',
   leaseStartDate: '',
@@ -117,6 +118,10 @@ onMounted(() => {
 
       <UFormField label="Phone" name="phone">
         <UInput v-model="state.phone" type="tel" placeholder="+1 234 567 8900" :ui="{ root: 'w-full' }" />
+      </UFormField>
+
+      <UFormField label="TIN" name="tin">
+        <UInput v-model="state.tin" placeholder="Tax Identification Number (optional)" :ui="{ root: 'w-full' }" />
       </UFormField>
 
       <UFormField label="Password (Optional)" name="password">
