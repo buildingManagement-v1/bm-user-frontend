@@ -60,6 +60,20 @@ const paymentDayOptions = Array.from({ length: 30 }, (_, i) => ({
   label: `Day ${i + 1}`,
 }))
 
+const taxPreview = computed(() => {
+  const base = Number(state.rentAmount)
+  if (!base || base <= 0 || !building.value) return null
+  const vatRate = Number(building.value.vatRate ?? 0)
+  const withholdingRate = Number(building.value.withholdingRate ?? 0)
+  if (vatRate === 0 && withholdingRate === 0) return null
+  const vat = vatRate > 0 ? Math.round(base * (vatRate / 100) * 100) / 100 : 0
+  const withholding = state.applyWithholding && withholdingRate > 0
+    ? Math.round((base + vat) * (withholdingRate / 100) * 100) / 100
+    : 0
+  const total = Math.round((base + vat - withholding) * 100) / 100
+  return { base, vat, vatRate, withholding, withholdingRate, total }
+})
+
 const statusOptions = [
   { value: 'active', label: 'Active' },
   { value: 'expired', label: 'Expired' },
@@ -233,7 +247,6 @@ onMounted(() => {
       </UFormField>
     </div>
 
-
     <UFormField label="Cars allowed (parking)" name="carsAllowed" :hint="building?.totalParkingLots ? `Building capacity: ${building.totalParkingLots} total lots` : undefined">
       <UInput v-model.number="state.carsAllowed" type="number" min="0" placeholder="0" :ui="{ root: 'w-full' }" />
     </UFormField>
@@ -288,6 +301,26 @@ onMounted(() => {
           :loading="terminating" @click="confirmTerminate">
           Confirm terminate
         </UButton>
+      </div>
+    </div>
+
+    <div v-if="taxPreview" class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm space-y-1">
+      <p class="text-xs font-medium text-gray-500 mb-2">Monthly payment breakdown</p>
+      <div class="flex justify-between text-gray-700">
+        <span>Base rent</span>
+        <span>ETB {{ taxPreview.base.toLocaleString() }}</span>
+      </div>
+      <div class="flex justify-between text-gray-700">
+        <span>VAT ({{ taxPreview.vatRate }}%)</span>
+        <span>+ ETB {{ taxPreview.vat.toLocaleString() }}</span>
+      </div>
+      <div v-if="state.applyWithholding && taxPreview.withholding > 0" class="flex justify-between text-gray-700">
+        <span>Withholding ({{ taxPreview.withholdingRate }}%)</span>
+        <span>- ETB {{ taxPreview.withholding.toLocaleString() }}</span>
+      </div>
+      <div class="border-t border-gray-300 pt-1 flex justify-between font-semibold text-gray-900">
+        <span>Tenant pays</span>
+        <span>ETB {{ taxPreview.total.toLocaleString() }}</span>
       </div>
     </div>
 

@@ -38,6 +38,9 @@ export interface Payment {
   tenantId: string;
   invoiceId?: string;
   amount: number;
+  baseAmount?: number;
+  vatAmount?: number;
+  withholdingAmount?: number;
   type: PaymentType;
   status: PaymentStatus;
   paymentDate: string;
@@ -122,5 +125,8 @@ export interface PaymentCalendar {
   startDate: string;
   endDate: string;
   rentAmount: number;
+  applyWithholding: boolean;
+  vatRate: number;
+  withholdingRate: number;
   periods: PaymentPeriod[];
 }

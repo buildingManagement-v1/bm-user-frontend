@@ -22,7 +22,7 @@ const state = reactive<{
 }>({
   unitId: '',
   amount: 0,
-  type: 'rent',
+  type: 'rent' as PaymentType,
   paymentDate: new Date().toISOString().split('T')[0] ?? '',
   monthsCovered: [],
   notes: '',
@@ -90,6 +90,20 @@ const computedAmount = computed<number>(() => {
 watch(computedAmount, (val) => {
   if (isRentType.value) state.amount = val
 }, { immediate: true })
+
+const taxBreakdown = computed(() => {
+  if (!isRentType.value || state.monthsCovered.length === 0) return null
+  const cal = paymentCalendar.value.find((c: PaymentCalendar) => c.unitId === state.unitId)
+  if (!cal) return null
+  const base = computedAmount.value
+  const vat = cal.vatRate > 0 ? Math.round(base * (cal.vatRate / 100) * 100) / 100 : 0
+  const withholding = cal.applyWithholding && cal.withholdingRate > 0
+    ? Math.round((base + vat) * (cal.withholdingRate / 100) * 100) / 100
+    : 0
+  const total = Math.round((base + vat - withholding) * 100) / 100
+  if (vat === 0 && withholding === 0) return null
+  return { base, vat, vatRate: cal.vatRate, withholding, withholdingRate: cal.withholdingRate, applyWithholding: cal.applyWithholding, total }
+})
 
 async function fetchProfile() {
   loadingProfile.value = true
@@ -173,6 +187,25 @@ onMounted(() => {
         @update:model-value="(v: { value: string } | undefined) => { state.unitId = v?.value ?? '' }"
       />
     </UFormField>
+
+    <div v-if="taxBreakdown" class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm space-y-1">
+      <div class="flex justify-between text-gray-700">
+        <span>Base rent</span>
+        <span>ETB {{ taxBreakdown.base.toLocaleString() }}</span>
+      </div>
+      <div class="flex justify-between text-gray-700">
+        <span>VAT ({{ taxBreakdown.vatRate }}%)</span>
+        <span>+ ETB {{ taxBreakdown.vat.toLocaleString() }}</span>
+      </div>
+      <div v-if="taxBreakdown.applyWithholding && taxBreakdown.withholding > 0" class="flex justify-between text-gray-700">
+        <span>Withholding ({{ taxBreakdown.withholdingRate }}%)</span>
+        <span>- ETB {{ taxBreakdown.withholding.toLocaleString() }}</span>
+      </div>
+      <div class="border-t border-gray-300 pt-1 flex justify-between font-semibold text-gray-900">
+        <span>Total</span>
+        <span>ETB {{ taxBreakdown.total.toLocaleString() }}</span>
+      </div>
+    </div>
 
     <div class="grid grid-cols-2 gap-4">
       <UFormField label="Amount" name="amount" required :hint="isRentType && state.monthsCovered.length > 0 ? 'Auto-computed from selected periods' : undefined">
