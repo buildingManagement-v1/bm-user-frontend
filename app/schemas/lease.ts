@@ -9,6 +9,9 @@ export const createLeaseSchema = z.object({
   rentAmount: z.coerce.number().positive("Rent amount must be greater than 0"),
   securityDeposit: z.coerce.number().positive().optional().or(z.literal("")),
   carsAllowed: z.coerce.number().int().min(0).optional().or(z.literal("")),
+  useDefaultPaymentDay: z.boolean(),
+  paymentCollectionDay: z.coerce.number().int().min(1).max(30).optional(),
+  applyWithholding: z.boolean(),
   status: z.nativeEnum(LeaseStatus).optional(),
 });
 

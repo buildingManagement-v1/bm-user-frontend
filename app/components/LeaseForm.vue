@@ -3,6 +3,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { createLeaseSchema, type CreateLeaseSchema } from '~/schemas/lease'
 import type { Lease, LeaseStatus } from '~/types/lease'
 import type { Unit } from '~/types/unit'
+import type { Building } from '~/types/building'
 import type { ApiResponse } from '~/types'
 
 const props = defineProps<{
@@ -28,6 +29,9 @@ const state = reactive<{
   rentAmount: number | string
   securityDeposit?: number | string
   carsAllowed?: number | string
+  useDefaultPaymentDay: boolean
+  paymentCollectionDay?: number
+  applyWithholding: boolean
   status: LeaseStatus
 }>({
   tenantId: props.tenantId,
@@ -37,15 +41,24 @@ const state = reactive<{
   rentAmount: props.lease?.rentAmount || 0,
   securityDeposit: props.lease?.securityDeposit || '',
   carsAllowed: props.lease?.carsAllowed ?? '',
+  useDefaultPaymentDay: props.lease?.useDefaultPaymentDay ?? true,
+  paymentCollectionDay: props.lease?.paymentCollectionDay ?? undefined,
+  applyWithholding: props.lease?.applyWithholding ?? false,
   status: props.lease?.status as LeaseStatus || 'active',
 })
 
 const loading = ref(false)
 const loadingUnits = ref(false)
 const units = ref<Unit[]>([])
+const building = ref<Building | null>(null)
 const showTerminateConfirm = ref(false)
 const terminateConfirmText = ref('')
 const terminating = ref(false)
+
+const paymentDayOptions = Array.from({ length: 30 }, (_, i) => ({
+  value: i + 1,
+  label: `Day ${i + 1}`,
+}))
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -94,6 +107,18 @@ async function fetchUnits() {
   }
 }
 
+async function fetchBuilding() {
+  try {
+    const response = await buildingApi<ApiResponse<Building>>(
+      props.buildingId,
+      `/v1/app/buildings/${props.buildingId}`
+    )
+    building.value = response.data
+  } catch {
+    // non-critical — hint won't show
+  }
+}
+
 function sanitizeOptionalNumber(body: Record<string, unknown>, key: string) {
   const v = body[key]
   if (v === '' || v === undefined) delete body[key]
@@ -103,6 +128,9 @@ function buildCreateBody(data: CreateLeaseSchema) {
   const body: Record<string, unknown> = { ...data }
   sanitizeOptionalNumber(body, 'securityDeposit')
   sanitizeOptionalNumber(body, 'carsAllowed')
+  if (data.useDefaultPaymentDay) {
+    delete body['paymentCollectionDay']
+  }
   return body
 }
 
@@ -174,6 +202,7 @@ function cancelTerminate() {
 
 onMounted(() => {
   fetchUnits()
+  fetchBuilding()
 })
 </script>
 
@@ -205,9 +234,38 @@ onMounted(() => {
     </div>
 
 
-    <UFormField label="Cars allowed (parking)" name="carsAllowed">
+    <UFormField label="Cars allowed (parking)" name="carsAllowed" :hint="building?.totalParkingLots ? `Building capacity: ${building.totalParkingLots} total lots` : undefined">
       <UInput v-model.number="state.carsAllowed" type="number" min="0" placeholder="0" :ui="{ root: 'w-full' }" />
     </UFormField>
+
+    <div class="space-y-3 rounded-lg border border-gray-200 p-4">
+      <p class="text-sm font-medium text-gray-700">Payment settings</p>
+
+      <UFormField name="useDefaultPaymentDay">
+        <UCheckbox
+          v-model="state.useDefaultPaymentDay"
+          label="Use building default payment date"
+          :description="building?.paymentCollectionDay ? `Building default: Day ${building.paymentCollectionDay}` : 'No default set on this building'"
+        />
+      </UFormField>
+
+      <UFormField v-if="!state.useDefaultPaymentDay" label="Payment collection day" name="paymentCollectionDay" required>
+        <USelectMenu
+          v-model="state.paymentCollectionDay"
+          :items="paymentDayOptions"
+          value-key="value"
+          placeholder="Select day"
+          class="w-full"
+        />
+      </UFormField>
+
+      <UFormField name="applyWithholding">
+        <UCheckbox
+          v-model="state.applyWithholding"
+          label="Tenant will pay withholding tax"
+        />
+      </UFormField>
+    </div>
 
     <UFormField v-if="mode === 'edit'" label="Status" name="status">
       <USelectMenu v-model="selectedStatus" :items="statusOptions" placeholder="Select status" class="w-full" />

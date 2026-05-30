@@ -14,6 +14,9 @@ export interface Lease {
   rentAmount: number;
   securityDeposit?: number;
   carsAllowed?: number;
+  useDefaultPaymentDay: boolean;
+  paymentCollectionDay?: number;
+  applyWithholding: boolean;
   status: LeaseStatus;
   terms?: any;
   createdAt: string;
@@ -38,6 +41,9 @@ export interface CreateLeaseRequest {
   rentAmount: number;
   securityDeposit?: number;
   carsAllowed?: number;
+  useDefaultPaymentDay: boolean;
+  paymentCollectionDay?: number;
+  applyWithholding: boolean;
   status?: LeaseStatus;
   terms?: any;
 }
