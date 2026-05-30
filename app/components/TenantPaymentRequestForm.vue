@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PaymentType, PaymentCalendar } from '~/types/payment'
+import type { PaymentType, PaymentCalendar, PaymentPeriod } from '~/types/payment'
 import type { ApiResponse } from '~/types'
 import type { TenantPaymentRequest } from '~/types/payment-request'
 import { createPaymentRequestSchema, type CreatePaymentRequestSchema } from '~/schemas/payment-request'
@@ -49,17 +49,47 @@ const unitOptions = computed(() => {
     .map(l => ({ value: l.unit.id, label: `Unit ${l.unit.unitNumber}` }))
 })
 
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+function formatPeriodLabel(p: Pick<PaymentPeriod, 'periodStart' | 'periodEnd' | 'daysInCycle' | 'month'>): string {
+  if (p.periodStart && p.periodEnd) {
+    const s = new Date(p.periodStart)
+    const e = new Date(p.periodEnd)
+    const sm = s.getUTCMonth(), sd = s.getUTCDate(), sy = s.getUTCFullYear()
+    const em = e.getUTCMonth(), ed = e.getUTCDate(), ey = e.getUTCFullYear()
+    const range = (sm === em && sy === ey)
+      ? `${MONTHS_SHORT[sm]} ${sd}–${ed}`
+      : `${MONTHS_SHORT[sm]} ${sd} – ${MONTHS_SHORT[em]} ${ed}`
+    return p.daysInCycle ? `${range} · ${p.daysInCycle}d` : range
+  }
+  return new Date(p.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+}
+
+const isRentType = computed(() => state.type === 'rent')
+
 const unpaidMonths = computed(() => {
   if (!state.unitId || !paymentCalendar.value.length) return []
   const cal = paymentCalendar.value.find((c: PaymentCalendar) => c.unitId === state.unitId)
   if (!cal?.periods) return []
-  return cal.periods
-    .filter((p: { status: string }) => p.status === 'unpaid' || p.status === 'overdue')
-    .map((p: { month: string }) => ({
-      value: p.month,
-      label: new Date(p.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
-    }))
+  return (cal.periods as PaymentPeriod[])
+    .filter(p => p.status === 'unpaid' || p.status === 'overdue')
+    .map(p => ({ value: p.month, label: formatPeriodLabel(p) }))
 })
+
+const computedAmount = computed<number>(() => {
+  if (isRentType.value && state.monthsCovered.length > 0) {
+    const cal = paymentCalendar.value.find((c: PaymentCalendar) => c.unitId === state.unitId)
+    if (!cal?.periods) return 0
+    return (cal.periods as PaymentPeriod[])
+      .filter(p => state.monthsCovered.includes(p.month))
+      .reduce((sum, p) => sum + Number(p.rentAmount), 0)
+  }
+  return state.amount
+})
+
+watch(computedAmount, (val) => {
+  if (isRentType.value) state.amount = val
+}, { immediate: true })
 
 async function fetchProfile() {
   loadingProfile.value = true
@@ -145,8 +175,14 @@ onMounted(() => {
     </UFormField>
 
     <div class="grid grid-cols-2 gap-4">
-      <UFormField label="Amount" name="amount" required>
-        <UInput v-model.number="state.amount" type="number" placeholder="0.00" :ui="{ root: 'w-full' }" />
+      <UFormField label="Amount" name="amount" required :hint="isRentType && state.monthsCovered.length > 0 ? 'Auto-computed from selected periods' : undefined">
+        <UInput
+          v-model.number="state.amount"
+          type="number"
+          placeholder="0.00"
+          :disabled="isRentType"
+          :ui="{ root: 'w-full' }"
+        />
       </UFormField>
       <UFormField label="Payment Type" name="type" required>
         <USelectMenu

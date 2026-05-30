@@ -136,6 +136,23 @@ const selectedType = computed({
   }
 })
 
+const isRentType = computed(() => state.type === 'rent')
+
+const computedAmount = computed<number>(() => {
+  if (isRentType.value && state.monthsCovered.length > 0) {
+    const cal = paymentCalendar.value.find(c => c.unitId === state.unitId)
+    if (!cal?.periods) return 0
+    return cal.periods
+      .filter(p => state.monthsCovered.includes(p.month))
+      .reduce((sum, p) => sum + Number(p.rentAmount), 0)
+  }
+  return state.amount
+})
+
+watch(computedAmount, (val) => {
+  if (isRentType.value) state.amount = val
+}, { immediate: true })
+
 async function fetchTenants() {
   loadingTenants.value = true
   try {
@@ -231,25 +248,29 @@ onMounted(() => {
       </template>
     </UFormField>
 
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField label="Amount" name="amount" required>
-        <UInput v-model.number="state.amount" type="number" placeholder="0.00" :ui="{ root: 'w-full' }" />
-      </UFormField>
+    <UFormField label="Payment Type" name="type" required>
+      <USelectMenu v-model="selectedType" :items="typeOptions" class="w-full" />
+    </UFormField>
 
-      <UFormField label="Payment Type" name="type" required>
-        <USelectMenu v-model="selectedType" :items="typeOptions" class="w-full" />
-      </UFormField>
-    </div>
+    <UFormField v-if="isRentType && unpaidMonths.length > 0" label="Months Covered" name="monthsCovered">
+      <USelectMenu v-model="selectedMonths" :items="unpaidMonths" multiple placeholder="Select months" class="w-full" />
+      <template #hint>
+        <span class="text-xs text-gray-500">Select the periods this payment covers</span>
+      </template>
+    </UFormField>
+
+    <UFormField label="Amount" name="amount" required :hint="isRentType && state.monthsCovered.length > 0 ? 'Auto-computed from selected periods' : undefined">
+      <UInput
+        v-model.number="state.amount"
+        type="number"
+        placeholder="0.00"
+        :disabled="isRentType"
+        :ui="{ root: 'w-full' }"
+      />
+    </UFormField>
 
     <UFormField label="Payment Date" name="paymentDate" required>
       <UInput v-model="state.paymentDate" type="date" :ui="{ root: 'w-full' }" />
-    </UFormField>
-
-    <UFormField v-if="state.type === 'rent' && unpaidMonths.length > 0" label="Months Covered" name="monthsCovered">
-      <USelectMenu v-model="selectedMonths" :items="unpaidMonths" multiple placeholder="Select months" class="w-full" />
-      <template #hint>
-        <span class="text-xs text-gray-500">Select which months this payment covers</span>
-      </template>
     </UFormField>
 
     <UFormField label="Notes" name="notes">
