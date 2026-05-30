@@ -11,9 +11,13 @@ export interface Building {
   city?: string;
   country?: string;
   contactEmail?: string;
-  contactPhone?: string;
+  contactPhone: string;
   logoUrl?: string;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
+  vatRate: number;
+  withholdingRate: number;
+  paymentCollectionDay: number;
+  totalParkingLots: number;
   status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;

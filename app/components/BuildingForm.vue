@@ -17,6 +17,11 @@ const emit = defineEmits<{
 const { api } = useApi()
 const toast = useToast()
 
+const paymentDayOptions = Array.from({ length: 30 }, (_, i) => ({
+  value: i + 1,
+  label: `${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} of each month`,
+}))
+
 const state = reactive({
   name: props.building?.name || '',
   address: props.building?.address || '',
@@ -24,6 +29,17 @@ const state = reactive({
   country: props.building?.country || '',
   contactEmail: props.building?.contactEmail || '',
   contactPhone: props.building?.contactPhone || '',
+  vatRate: props.building?.vatRate ?? ('' as unknown as number),
+  withholdingRate: props.building?.withholdingRate ?? ('' as unknown as number),
+  paymentCollectionDay: props.building?.paymentCollectionDay ?? undefined as number | undefined,
+  totalParkingLots: props.building?.totalParkingLots ?? ('' as unknown as number),
+})
+
+const selectedPaymentDay = computed({
+  get: () => paymentDayOptions.find(o => o.value === state.paymentCollectionDay),
+  set: (val: { value: number; label: string } | undefined) => {
+    state.paymentCollectionDay = val?.value
+  },
 })
 
 const loading = ref(false)
@@ -81,9 +97,29 @@ async function onSubmit(event: FormSubmitEvent<BuildingSchema>) {
       <UInput v-model="state.contactEmail" type="email" placeholder="contact@building.com" :ui="{ root: 'w-full' }" />
     </UFormField>
 
-    <UFormField label="Contact Phone" name="contactPhone">
+    <UFormField label="Contact Phone" name="contactPhone" required>
       <UInput v-model="state.contactPhone" type="tel" placeholder="+1234567890" :ui="{ root: 'w-full' }" />
     </UFormField>
+
+    <div class="border-t border-gray-200 pt-4">
+      <p class="text-sm font-medium text-gray-700 mb-3">Tax & Billing Settings</p>
+      <div class="grid grid-cols-2 gap-4">
+        <UFormField label="VAT Rate (%)" name="vatRate" required>
+          <UInput v-model.number="state.vatRate" type="number" min="0" max="100" step="0.1" placeholder="e.g. 15" :ui="{ root: 'w-full' }" />
+        </UFormField>
+        <UFormField label="Withholding Rate (%)" name="withholdingRate" required>
+          <UInput v-model.number="state.withholdingRate" type="number" min="0" max="100" step="0.1" placeholder="e.g. 3" :ui="{ root: 'w-full' }" />
+        </UFormField>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mt-4">
+        <UFormField label="Default Payment Collection Day" name="paymentCollectionDay" required>
+          <USelectMenu v-model="selectedPaymentDay" :items="paymentDayOptions" placeholder="Select day" class="w-full" />
+        </UFormField>
+        <UFormField label="Total Parking Lots" name="totalParkingLots" required>
+          <UInput v-model.number="state.totalParkingLots" type="number" min="0" placeholder="e.g. 20" :ui="{ root: 'w-full' }" />
+        </UFormField>
+      </div>
+    </div>
 
     <div class="flex gap-2 justify-end pt-4">
       <UButton type="button" color="neutral" variant="ghost" @click="emit('cancel')">

@@ -549,7 +549,10 @@ onMounted(() => {
       progress.
     </div>
 
-    <UTabs :items="tabs">
+    <UTabs :items="tabs" :ui="{
+      list: 'bg-white rounded-full shadow-[0_4px_24px_-4px_rgba(0,0,0,0.08)]',
+      indicator: 'rounded-full'
+    }">
       <template #portfolio>
         <div class="space-y-6 pt-4">
           <p class="text-gray-600">Compare all your buildings. Click a building name to view it in the selector.</p>
@@ -568,11 +571,11 @@ onMounted(() => {
               { accessorKey: 'openMaintenance', header: 'Open maint.' },
             ]">
               <template #collectedThisMonth-cell="{ row }">ETB {{ row.original.collectedThisMonth.toLocaleString()
-              }}</template>
+                }}</template>
               <template #expectedThisMonth-cell="{ row }">ETB {{ row.original.expectedThisMonth.toLocaleString()
-              }}</template>
+                }}</template>
               <template #outstandingAmount-cell="{ row }">ETB {{ row.original.outstandingAmount.toLocaleString()
-              }}</template>
+                }}</template>
               <template #occupancyRate-cell="{ row }">{{ row.original.occupancyRate }}%</template>
               <template #name-cell="{ row }">
                 <UButton variant="link" size="xs" @click="selectBuildingFromPortfolio(row.original.id)">
@@ -609,7 +612,7 @@ onMounted(() => {
             <UCard variant="elevated">
               <p class="text-sm text-gray-600">Lost rent / month</p>
               <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ occupancyData.lostRentPerMonth.toLocaleString()
-              }}</p>
+                }}</p>
             </UCard>
           </div>
 
@@ -686,7 +689,7 @@ onMounted(() => {
             <UCard variant="elevated">
               <p class="text-sm text-gray-600">Outstanding</p>
               <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ revenueData.outstanding.amount.toLocaleString()
-              }}</p>
+                }}</p>
               <p class="text-xs text-gray-500">{{ revenueData.outstanding.count }} period(s)</p>
             </UCard>
           </div>

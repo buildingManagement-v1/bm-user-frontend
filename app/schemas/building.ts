@@ -6,9 +6,13 @@ export const buildingSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   contactEmail: z.string().email("Invalid email").optional().or(z.literal("")),
-  contactPhone: z.string().optional(),
+  contactPhone: z.string().min(1, "Contact phone is required"),
   logoUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
-  settings: z.record(z.string(), z.any()).optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
+  vatRate: z.number().min(0).max(100),
+  withholdingRate: z.number().min(0).max(100),
+  paymentCollectionDay: z.number().int().min(1).max(30),
+  totalParkingLots: z.number().int().min(0),
 });
 
 export type BuildingSchema = z.output<typeof buildingSchema>;
