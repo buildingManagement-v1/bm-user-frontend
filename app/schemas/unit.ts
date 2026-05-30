@@ -3,19 +3,19 @@ import { UnitType, UnitStatus } from "~/types/unit";
 
 export const createUnitSchema = z.object({
   unitNumber: z.string().min(1, "Unit number is required"),
-  floor: z.number().int().optional(),
-  size: z.number().positive().optional(),
+  floor: z.coerce.number().int().optional(),
+  size: z.coerce.number().positive().optional(),
   type: z.nativeEnum(UnitType).optional(),
-  rentPrice: z.number().positive("Rent price must be greater than 0"),
+  rentPrice: z.coerce.number().positive("Rent price must be greater than 0"),
   status: z.nativeEnum(UnitStatus).optional(),
 });
 
 export const updateUnitSchema = z.object({
   unitNumber: z.string().min(1, "Unit number is required").optional(),
-  floor: z.number().int().optional(),
-  size: z.number().positive().optional(),
+  floor: z.coerce.number().int().optional(),
+  size: z.coerce.number().positive().optional(),
   type: z.nativeEnum(UnitType).optional(),
-  rentPrice: z
+  rentPrice: z.coerce
     .number()
     .positive("Rent price must be greater than 0")
     .optional(),

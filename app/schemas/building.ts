@@ -9,10 +9,10 @@ export const buildingSchema = z.object({
   contactPhone: z.string().min(1, "Contact phone is required"),
   logoUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
   settings: z.record(z.string(), z.unknown()).optional(),
-  vatRate: z.number().min(0).max(100),
-  withholdingRate: z.number().min(0).max(100),
-  paymentCollectionDay: z.number().int().min(1).max(30),
-  totalParkingLots: z.number().int().min(0),
+  vatRate: z.coerce.number().min(0).max(100),
+  withholdingRate: z.coerce.number().min(0).max(100),
+  paymentCollectionDay: z.coerce.number().int().min(1).max(30),
+  totalParkingLots: z.coerce.number().int().min(0),
 });
 
 export type BuildingSchema = z.output<typeof buildingSchema>;
