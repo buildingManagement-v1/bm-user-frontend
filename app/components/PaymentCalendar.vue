@@ -54,11 +54,25 @@ async function fetchCalendar() {
   }
 }
 
-function formatMonth(monthStr: string) {
-  return new Date(monthStr + '-01').toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-  })
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+function parseDateParts(iso: string) {
+  // Handles "2026-01-19T00:00:00.000Z" or "2026-01-19"
+  const d = new Date(iso)
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth(), day: d.getUTCDate() }
+}
+
+function formatPeriodRange(period: { periodStart?: string; periodEnd?: string; daysInCycle?: number; month: string }): string {
+  if (period.periodStart && period.periodEnd) {
+    const s = parseDateParts(period.periodStart)
+    const e = parseDateParts(period.periodEnd)
+    const range = (s.m === e.m && s.y === e.y)
+      ? `${MONTHS[s.m]} ${s.day}–${e.day}`
+      : `${MONTHS[s.m]} ${s.day} – ${MONTHS[e.m]} ${e.day}`
+    return period.daysInCycle ? `${range} · ${period.daysInCycle}d` : range
+  }
+  // Legacy: month is YYYY-MM
+  return new Date(period.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
 }
 
 onMounted(() => {
@@ -96,15 +110,16 @@ onMounted(() => {
           <span class="font-medium">ETB {{ selectedLease.rentAmount.toLocaleString() }}/month</span>
         </div>
 
-        <div class="grid grid-cols-6 gap-2">
+        <div class="grid grid-cols-4 gap-2">
           <div
             v-for="period in selectedLease.periods"
             :key="period.id"
             :class="['p-3 rounded-lg border text-center text-xs font-medium', statusColors[period.status]]"
           >
-            <div>{{ formatMonth(period.month) }}</div>
-            <div v-if="period.paidAt" class="text-[10px] mt-1 opacity-75">
-              {{ new Date(period.paidAt).toLocaleDateString() }}
+            <div class="font-semibold">{{ formatPeriodRange(period) }}</div>
+            <div class="mt-1 opacity-90">ETB {{ Number(period.rentAmount).toLocaleString() }}</div>
+            <div v-if="period.paidAt" class="text-[10px] mt-1 opacity-60">
+              Paid {{ new Date(period.paidAt).toLocaleDateString() }}
             </div>
           </div>
         </div>

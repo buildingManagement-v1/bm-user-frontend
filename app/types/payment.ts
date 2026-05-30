@@ -23,6 +23,9 @@ export interface PaymentPeriod {
   leaseId: string;
   month: string;
   rentAmount: number;
+  periodStart?: string;
+  periodEnd?: string;
+  daysInCycle?: number;
   status: PaymentPeriodStatus;
   paidAt?: string;
   paymentId?: string;

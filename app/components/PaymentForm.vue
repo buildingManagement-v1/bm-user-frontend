@@ -68,6 +68,22 @@ const unitOptions = computed(() => {
   }))
 })
 
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+function formatPeriodLabel(p: { periodStart?: string; periodEnd?: string; daysInCycle?: number; month: string }): string {
+  if (p.periodStart && p.periodEnd) {
+    const s = new Date(p.periodStart)
+    const e = new Date(p.periodEnd)
+    const sm = s.getUTCMonth(), sd = s.getUTCDate(), sy = s.getUTCFullYear()
+    const em = e.getUTCMonth(), ed = e.getUTCDate(), ey = e.getUTCFullYear()
+    const range = (sm === em && sy === ey)
+      ? `${MONTHS_SHORT[sm]} ${sd}–${ed}`
+      : `${MONTHS_SHORT[sm]} ${sd} – ${MONTHS_SHORT[em]} ${ed}`
+    return p.daysInCycle ? `${range} · ${p.daysInCycle}d` : range
+  }
+  return new Date(p.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+}
+
 // Months for the selected unit's lease: unpaid/overdue from calendar entry matching unitId
 const unpaidMonths = computed(() => {
   if (!state.unitId || !paymentCalendar.value.length) return []
@@ -77,7 +93,7 @@ const unpaidMonths = computed(() => {
     .filter(p => p.status === 'unpaid' || p.status === 'overdue')
     .map(p => ({
       value: p.month,
-      label: new Date(p.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
+      label: formatPeriodLabel(p),
     }))
 })
 
