@@ -104,14 +104,25 @@ const selectedBuilding = computed({
   }
 })
 
+const occupancyChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  cutout: '68%',
+  plugins: {
+    legend: { position: 'bottom' as const },
+  },
+}
+
 const occupancyChartData = computed(() => {
   if (!occupancyData.value) return null
   return {
     labels: ['Occupied', 'Vacant'],
     datasets: [{
       data: [occupancyData.value.occupiedUnits, occupancyData.value.vacantUnits],
-      backgroundColor: ['#10b981', '#e5e7eb'],
-    }]
+      backgroundColor: ['#8b5cf6', '#e4e4e7'],
+      borderWidth: 0,
+      hoverOffset: 6,
+    }],
   }
 })
 
@@ -497,7 +508,7 @@ onMounted(() => {
         <UCard variant="elevated">
           <div class="flex items-center gap-2">
             <UIcon name="i-heroicons-currency-dollar" class="h-5 w-5 text-zinc-500" />
-            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Expected (month)</p>
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Expected (month, incl. VAT)</p>
           </div>
           <p class="mt-2 text-xl font-bold text-indigo-700 dark:text-blue-100">ETB {{
             summaryData.expectedRentThisMonth.toLocaleString() }}</p>
@@ -505,7 +516,7 @@ onMounted(() => {
         <UCard variant="elevated">
           <div class="flex items-center gap-2">
             <UIcon name="i-heroicons-banknotes" class="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Collected (month)</p>
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Collected (month, incl. VAT)</p>
           </div>
           <p class="mt-2 text-xl font-bold text-emerald-700 dark:text-emerald-400">ETB {{
             summaryData.collectedRentThisMonth.toLocaleString() }}</p>
@@ -514,7 +525,7 @@ onMounted(() => {
         <UCard variant="elevated">
           <div class="flex items-center gap-2">
             <UIcon name="i-heroicons-exclamation-triangle" class="h-5 w-5 text-red-600 dark:text-red-400" />
-            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Outstanding</p>
+            <p class="text-xs font-medium uppercase tracking-wider text-zinc-500">Outstanding (incl. VAT)</p>
           </div>
           <p class="mt-2 text-xl font-bold text-red-700 dark:text-red-400">ETB {{
             summaryData.outstandingAmount.toLocaleString() }}</p>
@@ -563,8 +574,8 @@ onMounted(() => {
             <UTable :data="portfolioData.buildings" :columns="[
               { accessorKey: 'name', header: 'Building' },
               { accessorKey: 'occupancyRate', header: 'Occupancy %' },
-              { accessorKey: 'collectedThisMonth', header: 'Collected (month)' },
-              { accessorKey: 'expectedThisMonth', header: 'Expected (month)' },
+              { accessorKey: 'collectedThisMonth', header: 'Collected (month, incl. VAT)' },
+              { accessorKey: 'expectedThisMonth', header: 'Expected (month, incl. VAT)' },
               { accessorKey: 'outstandingAmount', header: 'Outstanding' },
               { accessorKey: 'vacantCount', header: 'Vacant' },
               { accessorKey: 'expiringIn30', header: 'Expiring ≤30d' },
@@ -617,12 +628,12 @@ onMounted(() => {
           </div>
 
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <UCard v-if="occupancyChartData" variant="elevated">
+            <UCard v-if="occupancyChartData" variant="elevated" class="overflow-hidden">
               <template #header>
-                <h3 class="text-lg font-semibold">Distribution</h3>
+                <h3 class="text-base font-semibold text-zinc-800 dark:text-zinc-200">Distribution</h3>
               </template>
-              <div class="flex justify-center" style="height: 200px;">
-                <Doughnut :data="occupancyChartData" :options="{ maintainAspectRatio: false }" />
+              <div class="h-56">
+                <Doughnut :data="occupancyChartData" :options="occupancyChartOptions" />
               </div>
             </UCard>
             <UCard v-if="occupancyTrendChartData" variant="elevated">
@@ -674,11 +685,11 @@ onMounted(() => {
 
           <div v-if="revenueData" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <UCard variant="elevated">
-              <p class="text-sm text-gray-600">Expected (period)</p>
+              <p class="text-sm text-gray-600">Expected (period, incl. VAT)</p>
               <p class="mt-1 text-2xl font-bold text-gray-900">ETB {{ revenueData.expectedRent.toLocaleString() }}</p>
             </UCard>
             <UCard variant="elevated">
-              <p class="text-sm text-gray-600">Collected (period)</p>
+              <p class="text-sm text-gray-600">Collected (period, incl. VAT)</p>
               <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ revenueData.collectedRent.toLocaleString() }}
               </p>
             </UCard>
