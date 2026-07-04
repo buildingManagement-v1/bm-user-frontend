@@ -66,7 +66,10 @@ export const useAuth = () => {
           mustResetPassword: response.data.mustResetPassword || false,
         };
       } else {
-        userData = response.data.tenant!;
+        userData = {
+          ...response.data.tenant!,
+          mustResetPassword: response.data.mustResetPassword || false,
+        };
       }
 
       user.value = userData;
@@ -151,7 +154,9 @@ export const useAuth = () => {
       const endpoint =
         userType.value === "user"
           ? "/v1/app/auth/change-password"
-          : "/v1/manager/auth/change-password";
+          : userType.value === "manager"
+            ? "/v1/manager/auth/change-password"
+            : "/v1/tenant/auth/change-password";
 
       await $fetch(`${config.public.apiUrl}${endpoint}`, {
         method: "POST",
@@ -161,12 +166,8 @@ export const useAuth = () => {
         body: { currentPassword: oldPassword, newPassword },
       });
 
-      // Update mustResetPassword flag for managers
-      if (
-        userType.value === "manager" &&
-        user.value &&
-        "mustResetPassword" in user.value
-      ) {
+      // Clear the forced-reset flag for managers and tenants
+      if (user.value && "mustResetPassword" in user.value) {
         const updatedUser = { ...user.value, mustResetPassword: false };
         user.value = updatedUser;
         userCookie.value = updatedUser;

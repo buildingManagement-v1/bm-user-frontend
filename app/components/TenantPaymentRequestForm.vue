@@ -76,26 +76,20 @@ const unpaidMonths = computed(() => {
     .map(p => ({ value: p.month, label: formatPeriodLabel(p) }))
 })
 
-const computedAmount = computed<number>(() => {
-  if (isRentType.value && state.monthsCovered.length > 0) {
-    const cal = paymentCalendar.value.find((c: PaymentCalendar) => c.unitId === state.unitId)
-    if (!cal?.periods) return 0
-    return (cal.periods as PaymentPeriod[])
-      .filter(p => state.monthsCovered.includes(p.month))
-      .reduce((sum, p) => sum + Number(p.rentAmount), 0)
-  }
-  return state.amount
+const baseAmount = computed<number>(() => {
+  if (!isRentType.value || state.monthsCovered.length === 0) return 0
+  const cal = paymentCalendar.value.find((c: PaymentCalendar) => c.unitId === state.unitId)
+  if (!cal?.periods) return 0
+  return (cal.periods as PaymentPeriod[])
+    .filter(p => state.monthsCovered.includes(p.month))
+    .reduce((sum, p) => sum + Number(p.rentAmount), 0)
 })
-
-watch(computedAmount, (val) => {
-  if (isRentType.value) state.amount = val
-}, { immediate: true })
 
 const taxBreakdown = computed(() => {
   if (!isRentType.value || state.monthsCovered.length === 0) return null
   const cal = paymentCalendar.value.find((c: PaymentCalendar) => c.unitId === state.unitId)
   if (!cal) return null
-  const base = computedAmount.value
+  const base = baseAmount.value
   const vat = cal.vatRate > 0 ? Math.round(base * (cal.vatRate / 100) * 100) / 100 : 0
   const withholding = cal.applyWithholding && cal.withholdingRate > 0
     ? Math.round((base + vat) * (cal.withholdingRate / 100) * 100) / 100
@@ -104,6 +98,19 @@ const taxBreakdown = computed(() => {
   if (vat === 0 && withholding === 0) return null
   return { base, vat, vatRate: cal.vatRate, withholding, withholdingRate: cal.withholdingRate, applyWithholding: cal.applyWithholding, total }
 })
+
+// For rent the amount is the grand total (base + VAT − withholding) — the
+// backend recomputes and rejects mismatches
+const computedAmount = computed<number>(() => {
+  if (isRentType.value && state.monthsCovered.length > 0) {
+    return taxBreakdown.value?.total ?? baseAmount.value
+  }
+  return state.amount
+})
+
+watch(computedAmount, (val) => {
+  if (isRentType.value) state.amount = val
+}, { immediate: true })
 
 async function fetchProfile() {
   loadingProfile.value = true
@@ -188,6 +195,29 @@ onMounted(() => {
       />
     </UFormField>
 
+    <UFormField label="Payment Type" name="type" required>
+      <USelectMenu
+        :model-value="typeOptions.find(t => t.value === state.type)"
+        :items="typeOptions"
+        class="w-full"
+        @update:model-value="(v: { value: string } | undefined) => { state.type = (v?.value as PaymentType) ?? 'rent' }"
+      />
+    </UFormField>
+
+    <UFormField v-if="state.type === 'rent' && unpaidMonths.length > 0" label="Months covered" name="monthsCovered">
+      <USelectMenu
+        :model-value="unpaidMonths.filter(m => state.monthsCovered.includes(m.value))"
+        :items="unpaidMonths"
+        multiple
+        placeholder="Select months"
+        class="w-full"
+        @update:model-value="(v: Array<{ value: string }>) => { state.monthsCovered = v?.map(x => x.value) ?? [] }"
+      />
+      <template #hint>
+        <span class="text-xs text-gray-500">Select the periods this payment covers</span>
+      </template>
+    </UFormField>
+
     <div v-if="taxBreakdown" class="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm space-y-1">
       <div class="flex justify-between text-gray-700">
         <span>Base rent</span>
@@ -207,39 +237,18 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField label="Amount" name="amount" required :hint="isRentType && state.monthsCovered.length > 0 ? 'Auto-computed from selected periods' : undefined">
-        <UInput
-          v-model.number="state.amount"
-          type="number"
-          placeholder="0.00"
-          :disabled="isRentType"
-          :ui="{ root: 'w-full' }"
-        />
-      </UFormField>
-      <UFormField label="Payment Type" name="type" required>
-        <USelectMenu
-          :model-value="typeOptions.find(t => t.value === state.type)"
-          :items="typeOptions"
-          class="w-full"
-          @update:model-value="(v: { value: string } | undefined) => { state.type = (v?.value as PaymentType) ?? 'rent' }"
-        />
-      </UFormField>
-    </div>
+    <UFormField label="Amount" name="amount" required :hint="isRentType && state.monthsCovered.length > 0 ? 'Total incl. tax — auto-computed from selected periods' : undefined">
+      <UInput
+        v-model.number="state.amount"
+        type="number"
+        placeholder="0.00"
+        :disabled="isRentType"
+        :ui="{ root: 'w-full' }"
+      />
+    </UFormField>
 
     <UFormField label="Payment Date" name="paymentDate" required>
       <UInput v-model="state.paymentDate" type="date" :ui="{ root: 'w-full' }" />
-    </UFormField>
-
-    <UFormField v-if="state.type === 'rent' && unpaidMonths.length > 0" label="Months covered" name="monthsCovered">
-      <USelectMenu
-        :model-value="unpaidMonths.filter(m => state.monthsCovered.includes(m.value))"
-        :items="unpaidMonths"
-        multiple
-        placeholder="Select months"
-        class="w-full"
-        @update:model-value="(v: Array<{ value: string }>) => { state.monthsCovered = v?.map(x => x.value) ?? [] }"
-      />
     </UFormField>
 
     <UFormField label="Receipt image" required>

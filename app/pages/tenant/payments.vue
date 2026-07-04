@@ -121,7 +121,14 @@ onMounted(() => {
         </template>
 
         <template #amount-cell="{ row }">
-          <span class="font-medium">ETB {{ row.original.amount.toLocaleString() }}</span>
+          <div>
+            <span class="font-medium">ETB {{ Number(row.original.amount).toLocaleString() }}</span>
+            <div v-if="Number(row.original.vatAmount) > 0 || Number(row.original.withholdingAmount) > 0" class="text-xs text-gray-500">
+              Base {{ Number(row.original.baseAmount).toLocaleString() }}
+              <span v-if="Number(row.original.vatAmount) > 0"> + VAT {{ Number(row.original.vatAmount).toLocaleString() }}</span>
+              <span v-if="Number(row.original.withholdingAmount) > 0"> − WHT {{ Number(row.original.withholdingAmount).toLocaleString() }}</span>
+            </div>
+          </div>
         </template>
 
         <template #status-cell="{ row }">

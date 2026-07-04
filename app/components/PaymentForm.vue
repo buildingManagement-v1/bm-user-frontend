@@ -138,26 +138,20 @@ const selectedType = computed({
 
 const isRentType = computed(() => state.type === 'rent')
 
-const computedAmount = computed<number>(() => {
-  if (isRentType.value && state.monthsCovered.length > 0) {
-    const cal = paymentCalendar.value.find(c => c.unitId === state.unitId)
-    if (!cal?.periods) return 0
-    return cal.periods
-      .filter(p => state.monthsCovered.includes(p.month))
-      .reduce((sum, p) => sum + Number(p.rentAmount), 0)
-  }
-  return state.amount
+const baseAmount = computed<number>(() => {
+  if (!isRentType.value || state.monthsCovered.length === 0) return 0
+  const cal = paymentCalendar.value.find(c => c.unitId === state.unitId)
+  if (!cal?.periods) return 0
+  return cal.periods
+    .filter(p => state.monthsCovered.includes(p.month))
+    .reduce((sum, p) => sum + Number(p.rentAmount), 0)
 })
-
-watch(computedAmount, (val) => {
-  if (isRentType.value) state.amount = val
-}, { immediate: true })
 
 const taxBreakdown = computed(() => {
   if (!isRentType.value || state.monthsCovered.length === 0) return null
   const cal = paymentCalendar.value.find(c => c.unitId === state.unitId)
   if (!cal) return null
-  const base = computedAmount.value
+  const base = baseAmount.value
   const vat = cal.vatRate > 0 ? Math.round(base * (cal.vatRate / 100) * 100) / 100 : 0
   const withholding = cal.applyWithholding && cal.withholdingRate > 0
     ? Math.round((base + vat) * (cal.withholdingRate / 100) * 100) / 100
@@ -166,6 +160,19 @@ const taxBreakdown = computed(() => {
   if (vat === 0 && withholding === 0) return null
   return { base, vat, vatRate: cal.vatRate, withholding, withholdingRate: cal.withholdingRate, applyWithholding: cal.applyWithholding, total }
 })
+
+// For rent the amount is the grand total (base + VAT − withholding) — the
+// backend recomputes and rejects mismatches
+const computedAmount = computed<number>(() => {
+  if (isRentType.value && state.monthsCovered.length > 0) {
+    return taxBreakdown.value?.total ?? baseAmount.value
+  }
+  return state.amount
+})
+
+watch(computedAmount, (val) => {
+  if (isRentType.value) state.amount = val
+}, { immediate: true })
 
 async function fetchTenants() {
   loadingTenants.value = true
@@ -292,7 +299,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <UFormField label="Amount" name="amount" required :hint="isRentType && state.monthsCovered.length > 0 ? 'Auto-computed from selected periods' : undefined">
+    <UFormField label="Amount" name="amount" required :hint="isRentType && state.monthsCovered.length > 0 ? 'Total incl. tax — auto-computed from selected periods' : undefined">
       <UInput
         v-model.number="state.amount"
         type="number"

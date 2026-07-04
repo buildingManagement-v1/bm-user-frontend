@@ -8,6 +8,14 @@ export const createPaymentRequestSchema = z.object({
   paymentDate: z.string().min(1, "Payment date is required"),
   monthsCovered: z.array(z.string()).optional(),
   notes: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.type === PaymentType.RENT && (data.monthsCovered?.length ?? 0) === 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["monthsCovered"],
+      message: "Select at least one payment period",
+    });
+  }
 });
 
 export type CreatePaymentRequestSchema = z.output<typeof createPaymentRequestSchema>;

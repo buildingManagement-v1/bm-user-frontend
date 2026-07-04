@@ -9,6 +9,7 @@ definePageMeta({
 const { changePassword, user } = useAuth()
 const router = useRouter()
 const toast = useToast()
+const userType = useCookie<string | null>('user_type')
 
 const state = reactive({
   currentPassword: '',
@@ -17,7 +18,9 @@ const state = reactive({
 })
 
 const loading = ref(false)
-const isManager = computed(() => user.value && 'mustResetPassword' in user.value)
+const isForcedReset = computed(() =>
+  Boolean(user.value && 'mustResetPassword' in user.value && user.value.mustResetPassword)
+)
 
 async function onSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
   loading.value = true
@@ -28,7 +31,7 @@ async function onSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
       description: 'You can now access the dashboard',
       color: 'success'
     })
-    router.push('/dashboard')
+    router.push(userType.value === 'tenant' ? '/tenant/dashboard' : '/dashboard')
   } catch (error: any) {
     toast.add({
       title: 'Password change failed',
@@ -48,7 +51,7 @@ async function onSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
         <div class="text-center">
           <UIcon name="i-heroicons-lock-closed" class="w-12 h-12 text-primary-600 mx-auto mb-4" />
           <h1 class="text-2xl font-bold text-gray-900">Change Password</h1>
-          <p v-if="isManager" class="text-sm text-amber-600 mt-2">
+          <p v-if="isForcedReset" class="text-sm text-amber-600 mt-2">
             You must change your password before accessing the system
           </p>
           <p v-else class="text-sm text-gray-500 mt-2">

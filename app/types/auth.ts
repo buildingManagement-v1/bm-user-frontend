@@ -22,6 +22,7 @@ export interface TenantAuthData {
     unitNumber: string;
     floor?: number;
   } | null;
+  mustResetPassword?: boolean;
 }
 
 export type AuthUser = User | Manager | TenantAuthData;
