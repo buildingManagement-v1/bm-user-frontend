@@ -152,7 +152,7 @@ function isActive(itemTo: string) {
       <UIcon v-else name="i-heroicons-building-office-2" class="w-8 h-8 text-primary-600 mx-auto" />
     </div>
 
-    <nav class="p-4 space-y-2">
+    <nav class="p-4 space-y-2 overflow-auto">
       <NuxtLink v-for="item in navigation" :key="item.to" :to="item.to" :class="[
         'group relative flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200 border whitespace-nowrap',
         isActive(item.to)

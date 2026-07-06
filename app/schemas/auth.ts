@@ -35,8 +35,13 @@ export const changePasswordSchema = z
     path: ["confirmPassword"],
   });
 
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Password is required to delete your account"),
+});
+
 export type LoginSchema = z.output<typeof loginSchema>;
 export type RegisterSchema = z.output<typeof registerSchema>;
 export type ForgotPasswordSchema = z.output<typeof forgotPasswordSchema>;
 export type ResetPasswordSchema = z.output<typeof resetPasswordSchema>;
 export type ChangePasswordSchema = z.output<typeof changePasswordSchema>;
+export type DeleteAccountSchema = z.output<typeof deleteAccountSchema>;

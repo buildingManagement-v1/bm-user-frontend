@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
-import { changePasswordSchema, type ChangePasswordSchema } from '~/schemas/auth'
+import { changePasswordSchema, deleteAccountSchema, type ChangePasswordSchema, type DeleteAccountSchema } from '~/schemas/auth'
 import { z } from 'zod'
 
 definePageMeta({
   layout: 'default',
 })
 
-const { user, userType, changePassword, updateEmail } = useAuth()
+const { user, userType, changePassword, updateEmail, deleteAccount, logout } = useAuth()
 const toast = useToast()
 
 const emailSchema = z.object({
@@ -59,6 +59,42 @@ async function onPasswordSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
 }
 
 const isOwnerOrManager = computed(() => userType.value === 'user' || userType.value === 'manager')
+const isOwner = computed(() => userType.value === 'user')
+
+// ── Danger zone: delete account (owners only) ─────────────────────────────
+const deleteModalOpen = ref(false)
+const deleteLoading = ref(false)
+const deleteState = reactive({
+  password: '',
+})
+
+function openDeleteModal() {
+  deleteState.password = ''
+  deleteModalOpen.value = true
+}
+
+function closeDeleteModal() {
+  deleteModalOpen.value = false
+}
+
+async function onDeleteSubmit(event: FormSubmitEvent<DeleteAccountSchema>) {
+  deleteLoading.value = true
+  try {
+    const result = await deleteAccount(event.data.password)
+    const purgeDate = new Date(result.purgeAt).toLocaleDateString()
+    toast.add({
+      title: 'Account scheduled for deletion',
+      description: `Your account and all its data will be permanently deleted on ${purgeDate}. Contact support before then if you change your mind.`,
+      color: 'warning',
+    })
+    deleteModalOpen.value = false
+    logout()
+  } catch (error: any) {
+    toast.add({ title: 'Failed to delete account', description: error.message, color: 'error' })
+  } finally {
+    deleteLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -107,6 +143,52 @@ const isOwnerOrManager = computed(() => userType.value === 'user' || userType.va
           </UButton>
         </UForm>
       </UCard>
+
+      <UCard v-if="isOwner" variant="elevated" class="border border-red-200">
+        <template #header>
+          <h2 class="text-lg font-semibold text-red-600">Danger zone</h2>
+        </template>
+        <div class="space-y-3">
+          <p class="text-sm text-gray-600 max-w-2xl">
+            Deleting your account removes access to all your buildings, units, tenants, leases,
+            payments and managers. Your account is kept for a short grace period during which
+            support can restore it — after that, everything is permanently deleted.
+          </p>
+          <UButton color="error" variant="soft" icon="i-heroicons-trash" @click="openDeleteModal">
+            Delete account
+          </UButton>
+        </div>
+      </UCard>
     </template>
+
+    <UModal v-model:open="deleteModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold text-gray-900">Delete your account?</h3>
+          </template>
+          <UForm :schema="deleteAccountSchema" :state="deleteState" @submit="onDeleteSubmit" class="space-y-4">
+            <UAlert
+              color="error"
+              variant="subtle"
+              icon="i-heroicons-exclamation-triangle"
+              title="This cannot be undone after the grace period"
+              description="All your buildings, tenants, leases and payment records will be permanently deleted. Your managers and tenants will lose access immediately."
+            />
+            <UFormField label="Confirm your password" name="password" required>
+              <UInput v-model="deleteState.password" type="password" placeholder="Enter your password" :ui="{ root: 'w-full' }" />
+            </UFormField>
+            <div class="flex justify-end gap-3">
+              <UButton color="neutral" variant="ghost" @click="closeDeleteModal">
+                Cancel
+              </UButton>
+              <UButton type="submit" color="error" :loading="deleteLoading">
+                Delete my account
+              </UButton>
+            </div>
+          </UForm>
+        </UCard>
+      </template>
+    </UModal>
   </div>
 </template>

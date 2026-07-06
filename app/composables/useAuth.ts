@@ -207,6 +207,29 @@ export const useAuth = () => {
     }
   };
 
+  const deleteAccount = async (password: string) => {
+    if (userType.value !== "user") {
+      throw new Error("Not available");
+    }
+    try {
+      const response = await $fetch<ApiResponse<{ purgeAt: string }>>(
+        `${config.public.apiUrl}/v1/app/auth/account`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token.value}`,
+          },
+          body: { password },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      const message =
+        error.data?.message || error.message || "Account deletion failed";
+      throw new Error(message);
+    }
+  };
+
   const isAuthenticated = computed(() => !!token.value);
 
   return {
@@ -221,6 +244,7 @@ export const useAuth = () => {
     refresh,
     changePassword,
     updateEmail,
+    deleteAccount,
     isAuthenticated,
   };
 };
