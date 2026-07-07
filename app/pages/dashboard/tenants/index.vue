@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { Tenant } from '~/types/tenant'
+import type { Tenant, TenantDeletionPreview } from '~/types/tenant'
 import type { Lease } from '~/types/lease'
 import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
 
@@ -41,6 +41,11 @@ const selectedStatusOption = computed({
 })
 const isCreateModalOpen = ref(false)
 const isEditModalOpen = ref(false)
+const isDeleteModalOpen = ref(false)
+const deleteTarget = ref<Tenant | null>(null)
+const deletePreview = ref<TenantDeletionPreview | null>(null)
+const previewLoading = ref(false)
+const deleteLoading = ref(false)
 const isLeaseModalOpen = ref(false)
 const isLeaseFormModalOpen = ref(false)
 const isCalendarModalOpen = ref(false)
@@ -175,17 +180,47 @@ function openEditLeaseModal(lease: Lease) {
   isLeaseFormModalOpen.value = true
 }
 
-async function deleteTenant(id: string) {
-  if (!confirm('Are you sure you want to delete this tenant?')) return
+async function openDeleteModal(tenant: Tenant) {
   if (!selectedBuildingId.value) return
 
+  deleteTarget.value = tenant
+  deletePreview.value = null
+  isDeleteModalOpen.value = true
+
+  previewLoading.value = true
   try {
-    await buildingApi(selectedBuildingId.value, `/v1/app/tenants/${id}`, { method: 'DELETE' })
+    const response = await buildingApi<ApiResponse<TenantDeletionPreview>>(
+      selectedBuildingId.value,
+      `/v1/app/tenants/${tenant.id}/deletion-preview`
+    )
+    deletePreview.value = response.data
+  } catch (error: any) {
+    toast.add({ title: 'Could not load deletion details', description: error.message || '', color: 'error' })
+  } finally {
+    previewLoading.value = false
+  }
+}
+
+function closeDeleteModal() {
+  isDeleteModalOpen.value = false
+  deleteTarget.value = null
+  deletePreview.value = null
+}
+
+async function confirmDeleteTenant() {
+  if (!deleteTarget.value || !selectedBuildingId.value) return
+
+  deleteLoading.value = true
+  try {
+    await buildingApi(selectedBuildingId.value, `/v1/app/tenants/${deleteTarget.value.id}`, { method: 'DELETE' })
     toast.add({ title: 'Tenant deleted successfully', color: 'success' })
+    closeDeleteModal()
     fetchTenants()
   } catch (error: any) {
-    const message = error.data?.message || error.message || 'Could not delete tenant'
+    const message = error.message || 'Could not delete tenant'
     toast.add({ title: 'Failed to delete tenant', description: message, color: 'error' })
+  } finally {
+    deleteLoading.value = false
   }
 }
 
@@ -204,6 +239,19 @@ async function deleteLease(id: string) {
     toast.add({ title: 'Failed to delete lease', description: message, color: 'error' })
   }
 }
+
+const deletionSummaryItems = computed<Array<{ label: string; count: number }>>(() => {
+  const counts = deletePreview.value?.counts
+  if (!counts) return []
+  return [
+    { label: 'Active lease(s)', count: counts.activeLeases },
+    { label: 'Unpaid / overdue payment period(s)', count: counts.unpaidPaymentPeriods },
+    { label: 'Registered vehicle(s)', count: counts.vehicles },
+    { label: 'Pending payment request(s)', count: counts.pendingPaymentRequests },
+    { label: 'Pending parking request(s)', count: counts.pendingParkingRequests },
+    { label: 'Open maintenance request(s)', count: counts.openMaintenanceRequests },
+  ].filter(item => item.count > 0)
+})
 
 function handleSuccess() {
   isCreateModalOpen.value = false
@@ -300,7 +348,7 @@ watch(selectedBuildingId, () => {
             </UButton>
             <UDropdownMenu :items="[
               [{ label: 'Edit', icon: 'i-heroicons-pencil', onSelect: () => openEditModal(row.original) }],
-              [{ label: 'Delete', icon: 'i-heroicons-trash', onSelect: () => deleteTenant(row.original.id) }]
+              [{ label: 'Delete', icon: 'i-heroicons-trash', onSelect: () => openDeleteModal(row.original) }]
             ]" :content="{ align: 'end' }">
               <UButton size="xs" color="neutral" variant="outline" icon="i-heroicons-ellipsis-vertical" />
             </UDropdownMenu>
@@ -336,6 +384,58 @@ watch(selectedBuildingId, () => {
       <template #body>
         <TenantForm v-if="selectedTenant && selectedBuildingId" mode="edit" :building-id="selectedBuildingId"
           :tenant="selectedTenant" @success="handleSuccess" @cancel="isEditModalOpen = false" />
+      </template>
+    </UModal>
+
+    <!-- Delete Tenant Confirmation Modal -->
+    <UModal v-model:open="isDeleteModalOpen" :title="`Delete ${deleteTarget?.name}?`">
+      <template #body>
+        <div class="space-y-4">
+          <UAlert color="error" variant="subtle" icon="i-heroicons-exclamation-triangle"
+            title="This tenant and all their related records will be deleted"
+            description="Their leases, registered vehicles and requests will be removed, and units on active leases will become vacant. Payment history is retained." />
+
+          <div v-if="previewLoading" class="space-y-2">
+            <USkeleton class="h-4 w-3/4" />
+            <USkeleton class="h-4 w-2/3" />
+            <USkeleton class="h-4 w-1/2" />
+          </div>
+
+          <div v-else-if="deletePreview" class="space-y-3">
+            <div v-if="deletePreview.activeLeases.length > 0">
+              <p class="text-sm font-medium text-gray-900 mb-1">Active leases that will be removed:</p>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li v-for="lease in deletePreview.activeLeases" :key="lease.id">
+                  Unit {{ lease.unitNumber }}
+                  <span v-if="lease.floor" class="text-gray-500">(Floor {{ lease.floor }})</span>
+                  — ETB {{ lease.rentAmount.toLocaleString() }}, ends {{ formatDate(lease.endDate) }}
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="deletionSummaryItems.length > 0">
+              <p class="text-sm font-medium text-gray-900 mb-1">Affected records:</p>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li v-for="item in deletionSummaryItems" :key="item.label">
+                  {{ item.count }} {{ item.label }}
+                </li>
+              </ul>
+            </div>
+
+            <p v-if="deletionSummaryItems.length === 0" class="text-sm text-gray-600">
+              This tenant has no active leases or open records.
+            </p>
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <UButton color="neutral" variant="ghost" :disabled="deleteLoading" @click="closeDeleteModal">
+              Cancel
+            </UButton>
+            <UButton color="error" :loading="deleteLoading" @click="confirmDeleteTenant">
+              Delete tenant
+            </UButton>
+          </div>
+        </div>
       </template>
     </UModal>
 

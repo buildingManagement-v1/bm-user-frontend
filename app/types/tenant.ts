@@ -24,6 +24,25 @@ export interface Tenant {
   }>;
 }
 
+export interface TenantDeletionPreview {
+  tenant: { id: string; name: string; email: string };
+  activeLeases: Array<{
+    id: string;
+    unitNumber: string;
+    floor?: number | null;
+    endDate: string;
+    rentAmount: number;
+  }>;
+  counts: {
+    activeLeases: number;
+    unpaidPaymentPeriods: number;
+    vehicles: number;
+    pendingPaymentRequests: number;
+    pendingParkingRequests: number;
+    openMaintenanceRequests: number;
+  };
+}
+
 export interface CreateTenantRequest {
   name: string;
   email: string;
