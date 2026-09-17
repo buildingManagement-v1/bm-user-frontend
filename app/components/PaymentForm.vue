@@ -77,8 +77,10 @@ function formatPeriodLabel(p: { periodStart?: string; periodEnd?: string; daysIn
     const sm = s.getUTCMonth(), sd = s.getUTCDate(), sy = s.getUTCFullYear()
     const em = e.getUTCMonth(), ed = e.getUTCDate(), ey = e.getUTCFullYear()
     const range = (sm === em && sy === ey)
-      ? `${MONTHS_SHORT[sm]} ${sd}–${ed}`
-      : `${MONTHS_SHORT[sm]} ${sd} – ${MONTHS_SHORT[em]} ${ed}`
+      ? `${MONTHS_SHORT[sm]} ${sd}–${ed}, ${sy}`
+      : (sy === ey)
+        ? `${MONTHS_SHORT[sm]} ${sd} – ${MONTHS_SHORT[em]} ${ed}, ${sy}`
+        : `${MONTHS_SHORT[sm]} ${sd}, ${sy} – ${MONTHS_SHORT[em]} ${ed}, ${ey}`
     return p.daysInCycle ? `${range} · ${p.daysInCycle}d` : range
   }
   return new Date(p.month + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
