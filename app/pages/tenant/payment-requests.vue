@@ -68,6 +68,7 @@ function onSearch() {
 }
 
 const receiptPreviewUrl = ref<string | null>(null)
+const receiptIsPdf = ref(false)
 const receiptModalOpen = ref(false)
 
 async function viewReceipt(id: string) {
@@ -75,8 +76,9 @@ async function viewReceipt(id: string) {
     const blob = await api<Blob>(`/v1/tenant/payment-requests/${id}/receipt`, {
       responseType: 'blob',
     })
-    const url = URL.createObjectURL(blob as unknown as Blob)
-    receiptPreviewUrl.value = url
+    const file = blob as unknown as Blob
+    receiptIsPdf.value = file.type === 'application/pdf'
+    receiptPreviewUrl.value = URL.createObjectURL(file)
     receiptModalOpen.value = true
   } catch (e: any) {
     toast.add({ title: 'Failed to load receipt', description: e.message, color: 'error' })
@@ -108,7 +110,7 @@ onMounted(() => {
         <h1 class="text-2xl font-bold text-gray-900">Payment requests</h1>
         <p class="text-gray-600 mt-1">Submit a payment with receipt for manager approval</p>
       </div>
-      <UButton color="primary" icon="i-heroicons-plus" @click="isFormOpen = true">
+      <UButton color="primary" icon="i-heroicons-plus" @click="() => { isFormOpen = true }">
         Submit payment
       </UButton>
     </div>
@@ -177,7 +179,7 @@ onMounted(() => {
         <template #empty>
           <div class="text-center py-12">
             <p class="text-gray-500">No payment requests yet. Submit one for approval.</p>
-            <UButton class="mt-4" color="primary" @click="isFormOpen = true">Submit payment</UButton>
+            <UButton class="mt-4" color="primary" @click="() => { isFormOpen = true }">Submit payment</UButton>
           </div>
         </template>
       </UTable>
@@ -192,7 +194,7 @@ onMounted(() => {
     <UModal v-model:open="receiptModalOpen" title="Receipt" @close="closeReceiptPreview">
       <template #body>
         <div class="flex justify-center p-4">
-          <img v-if="receiptPreviewUrl" :src="receiptPreviewUrl" alt="Receipt" class="max-w-full max-h-[70vh] object-contain" />
+          <ReceiptPreview v-if="receiptPreviewUrl" :url="receiptPreviewUrl" :is-pdf="receiptIsPdf" />
         </div>
       </template>
     </UModal>

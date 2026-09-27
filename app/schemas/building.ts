@@ -11,8 +11,9 @@ export const buildingSchema = z.object({
   settings: z.record(z.string(), z.unknown()).optional(),
   vatRate: z.coerce.number().min(0).max(100),
   withholdingRate: z.coerce.number().min(0).max(100),
-  paymentCollectionDay: z.coerce.number().int().min(1).max(30),
+  paymentCollectionDay: z.coerce.number().int().min(1).max(31),
   totalParkingLots: z.coerce.number().int().min(0),
+  paymentGraceDays: z.coerce.number().int().min(0).max(28).optional(),
 });
 
 export type BuildingSchema = z.output<typeof buildingSchema>;

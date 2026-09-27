@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { createUnitSchema, updateUnitSchema, type CreateUnitSchema, type UpdateUnitSchema } from '~/schemas/unit'
-import type { Unit, UnitType, UnitStatus } from '~/types/unit'
+import type { Unit, UnitType, SettableUnitStatus } from '~/types/unit'
 import type { ApiResponse } from '~/types'
 
 const props = defineProps<{
@@ -24,15 +24,20 @@ const state = reactive<{
   size?: number
   type?: UnitType
   rentPrice: number
-  status: UnitStatus
+  status?: SettableUnitStatus
 }>({
   unitNumber: props.unit?.unitNumber || '',
   floor: props.unit?.floor,
   size: props.unit?.size,
   type: props.unit?.type,
   rentPrice: props.unit?.rentPrice || 0,
-  status: props.unit?.status as UnitStatus || 'vacant',
+  // Occupied units follow their lease; only vacant/inactive can be chosen
+  status: props.unit?.status === 'occupied'
+    ? undefined
+    : (props.unit?.status as SettableUnitStatus | undefined) ?? ('vacant' as SettableUnitStatus),
 })
+
+const isOccupied = computed(() => props.unit?.status === 'occupied')
 
 const loading = ref(false)
 
@@ -46,9 +51,8 @@ const typeOptions = [
 ]
 
 const statusOptions = [
-  { value: 'vacant', label: 'Vacant' },
-  { value: 'occupied', label: 'Occupied' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'vacant', label: 'Vacant (available to lease)' },
+  { value: 'inactive', label: 'Inactive (off the market)' },
 ]
 
 const selectedType = computed({
@@ -61,7 +65,7 @@ const selectedType = computed({
 const selectedStatus = computed({
   get: () => statusOptions.find(s => s.value === state.status),
   set: (val: { value: string; label: string } | undefined) => {
-    state.status = (val?.value as UnitStatus) || 'vacant'
+    state.status = (val?.value as SettableUnitStatus) || ('vacant' as SettableUnitStatus)
   }
 })
 
@@ -125,12 +129,13 @@ async function onSubmit(event: FormSubmitEvent<CreateUnitSchema | UpdateUnitSche
     </UFormField>
 
     <UFormField label="Rent Price" name="rentPrice" required>
-      <UInput v-model.number="state.rentPrice" type="number" step="0.01" placeholder="Monthly rent"
-        icon="i-heroicons-currency-dollar" :ui="{ root: 'w-full' }" />
+      <UInput v-model.number="state.rentPrice" type="number" step="0.01" placeholder="Monthly rent (ETB)"
+        icon="i-heroicons-banknotes" :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <UFormField label="Status" name="status">
-      <USelectMenu v-model="selectedStatus" :items="statusOptions" class="w-full" />
+      <UInput v-if="isOccupied" model-value="Occupied (set by its active lease)" disabled :ui="{ root: 'w-full' }" />
+      <USelectMenu v-else v-model="selectedStatus" :items="statusOptions" class="w-full" />
     </UFormField>
 
     <div class="flex gap-2 justify-end pt-4">

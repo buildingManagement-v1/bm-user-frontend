@@ -128,7 +128,7 @@ watch(selectedBuildingId, () => {
 
       <div class="flex items-center gap-3">
         <BuildingSelector v-model="selectedBuildingId" />
-        <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true"
+        <UButton color="primary" icon="i-heroicons-plus" @click="() => { isCreateModalOpen = true }"
           :disabled="!selectedBuildingId">
           Add Unit
         </UButton>
@@ -198,7 +198,7 @@ watch(selectedBuildingId, () => {
             <p class="text-gray-500 mb-4">
               {{ selectedBuildingId ? 'Get started by adding your first unit' : 'Select a building to manage units' }}
             </p>
-            <UButton v-if="selectedBuildingId" color="primary" @click="isCreateModalOpen = true">
+            <UButton v-if="selectedBuildingId" color="primary" @click="() => { isCreateModalOpen = true }">
               Add Unit
             </UButton>
           </div>

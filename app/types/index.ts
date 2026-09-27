@@ -11,3 +11,5 @@ export * from "./subscription";
 export * from "./notification";
 export * from "./parking";
 export * from "./payment-request";
+export * from "./advert";
+export * from "./announcement";

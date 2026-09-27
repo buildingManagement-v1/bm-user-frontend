@@ -291,7 +291,7 @@ watch(selectedBuildingId, () => {
           </div>
 
           <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="isDetailModalOpen = false">
+            <UButton color="neutral" variant="ghost" @click="() => { isDetailModalOpen = false }">
               Close
             </UButton>
             <UButton color="primary" @click="downloadInvoice(selectedInvoice!.id)">

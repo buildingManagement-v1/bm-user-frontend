@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
-import { changePasswordSchema, deleteAccountSchema, type ChangePasswordSchema, type DeleteAccountSchema } from '~/schemas/auth'
-import { z } from 'zod'
+import {
+  changePasswordSchema,
+  deleteAccountSchema,
+  updateEmailSchema,
+  type ChangePasswordSchema,
+  type DeleteAccountSchema,
+  type UpdateEmailSchema,
+} from '~/schemas/auth'
 
 definePageMeta({
   layout: 'default',
@@ -10,12 +16,9 @@ definePageMeta({
 const { user, userType, changePassword, updateEmail, deleteAccount, logout } = useAuth()
 const toast = useToast()
 
-const emailSchema = z.object({
-  email: z.string().email('Invalid email address'),
-})
-
-const emailState = reactive({
-  email: (user.value && 'email' in user.value ? user.value.email : '') as string,
+const emailState = reactive<UpdateEmailSchema>({
+  email: user.value?.email ?? '',
+  currentPassword: '',
 })
 
 const passwordState = reactive({
@@ -31,10 +34,11 @@ watch(user, (u) => {
   if (u && 'email' in u) emailState.email = u.email
 }, { immediate: true })
 
-async function onEmailSubmit(event: FormSubmitEvent<{ email: string }>) {
+async function onEmailSubmit(event: FormSubmitEvent<UpdateEmailSchema>) {
   emailLoading.value = true
   try {
-    await updateEmail(event.data.email)
+    await updateEmail(event.data.email, event.data.currentPassword)
+    emailState.currentPassword = ''
     toast.add({ title: 'Email updated successfully', color: 'success' })
   } catch (error: any) {
     toast.add({ title: 'Failed to update email', description: error.message, color: 'error' })
@@ -47,7 +51,7 @@ async function onPasswordSubmit(event: FormSubmitEvent<ChangePasswordSchema>) {
   passwordLoading.value = true
   try {
     await changePassword(event.data.currentPassword, event.data.newPassword)
-    toast.add({ title: 'Password changed successfully', color: 'success' })
+    toast.add({ title: 'Password changed successfully', description: 'You were signed out on your other devices.', color: 'success' })
     passwordState.currentPassword = ''
     passwordState.newPassword = ''
     passwordState.confirmPassword = ''
@@ -114,9 +118,13 @@ async function onDeleteSubmit(event: FormSubmitEvent<DeleteAccountSchema>) {
         <template #header>
           <h2 class="text-lg font-semibold">Change email</h2>
         </template>
-        <UForm :schema="emailSchema" :state="emailState" @submit="onEmailSubmit" class="space-y-4">
+        <UForm :schema="updateEmailSchema" :state="emailState" @submit="onEmailSubmit" class="space-y-4">
           <UFormField label="Email" name="email" required>
             <UInput v-model="emailState.email" type="email" placeholder="your@email.com" :ui="{ root: 'w-full max-w-md' }" />
+          </UFormField>
+          <UFormField label="Current password" name="currentPassword" required>
+            <UInput v-model="emailState.currentPassword" type="password" placeholder="Confirm it's you"
+              :ui="{ root: 'w-full max-w-md' }" />
           </UFormField>
           <UButton type="submit" color="primary" :loading="emailLoading">
             Update email

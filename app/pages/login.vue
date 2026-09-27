@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { loginSchema, type LoginSchema } from '~/schemas/auth'
+import { ApiError } from '~/types/api'
+import type { AdvertAudience, BuildingChoice } from '~/types'
 
 definePageMeta({
   layout: false,
@@ -25,20 +27,39 @@ const userTypeOptions = [
 const selectedUserType = ref(userTypeOptions[0])
 const loading = ref(false)
 
+// A tenant whose email is registered in several buildings picks one
+const buildingChoices = ref<BuildingChoice[]>([])
+const selectedBuilding = ref<BuildingChoice | undefined>()
+watch(selectedUserType, () => {
+  buildingChoices.value = []
+  selectedBuilding.value = undefined
+})
+
+const advertAudience = computed<AdvertAudience>(() => {
+  const type = selectedUserType.value?.value
+  return type === 'tenant' ? 'tenant' : type === 'manager' ? 'manager' : 'owner'
+})
+
 async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
+  const type = (selectedUserType.value?.value as UserType) || 'user'
+  if (buildingChoices.value.length && !selectedBuilding.value) {
+    toast.add({ title: 'Choose the building to sign in to', color: 'warning' })
+    return
+  }
   loading.value = true
   try {
-    await login(event.data.email, event.data.password, (selectedUserType.value?.value as UserType) || 'user', state.rememberMe)
+    await login(event.data.email, event.data.password, type, state.rememberMe, selectedBuilding.value?.id)
     toast.add({ title: 'Login successful', color: 'success' })
-    if (selectedUserType.value?.value === 'tenant') {
-      await router.push('/tenant/dashboard')
-    } else {
-      await router.push('/dashboard')
+    await router.push(type === 'tenant' ? '/tenant/dashboard' : '/dashboard')
+  } catch (error) {
+    if (error instanceof ApiError && error.data?.code === 'BUILDING_SELECTION_REQUIRED') {
+      buildingChoices.value = (error.data.buildings as BuildingChoice[]) ?? []
+      toast.add({ title: 'Choose your building', description: error.message, color: 'info' })
+      return
     }
-  } catch (error: any) {
     toast.add({
       title: 'Login failed',
-      description: error.message,
+      description: error instanceof Error ? error.message : undefined,
       color: 'error'
     })
   } finally {
@@ -108,8 +129,11 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
           </div>
         </div>
 
-        <div class="text-primary-200 text-sm">
-          © 2026 BuildingMS. All rights reserved.
+        <div class="space-y-6">
+          <LoginAdverts :audience="advertAudience" />
+          <div class="text-primary-200 text-sm">
+            © 2026 BuildingMS. All rights reserved.
+          </div>
         </div>
       </div>
     </div>
@@ -141,10 +165,12 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
           <UFormField label="Password" name="password" required>
             <UInput v-model="state.password" type="password" placeholder="Enter your password"
               icon="i-heroicons-lock-closed" size="lg" :ui="{ root: 'w-full' }" />
-            <template v-if="selectedUserType?.value === 'tenant'" #hint>
-              <span class="text-xs text-gray-500">If you have accounts at more than one building, use the password for
-                the building you want to sign in to.</span>
-            </template>
+          </UFormField>
+
+          <UFormField v-if="buildingChoices.length" label="Building" required
+            help="Your email is registered in more than one building.">
+            <USelectMenu v-model="selectedBuilding" :items="buildingChoices" label-key="name"
+              placeholder="Select a building" size="lg" class="w-full" />
           </UFormField>
 
           <div class="flex items-center justify-between">

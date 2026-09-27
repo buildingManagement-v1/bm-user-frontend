@@ -4,17 +4,21 @@ import { ManagerRole } from "~/types/manager";
 export const createManagerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "Phone is required"),
   buildingAssignments: z
     .array(
       z.object({
-        buildingId: z.string(),
+        buildingId: z.string().uuid("Select a building"),
         roles: z
           .array(z.nativeEnum(ManagerRole))
           .min(1, "Select at least one role per building"),
       })
     )
-    .min(1, "Assign to at least one building"),
+    .min(1, "Assign to at least one building")
+    .refine(
+      (a) => new Set(a.map((x) => x.buildingId)).size === a.length,
+      "Each building can only be assigned once"
+    ),
 });
 
 export const updateManagerSchema = z.object({
@@ -29,7 +33,7 @@ export const updateManagerSchema = z.object({
   buildingAssignments: z
     .array(
       z.object({
-        buildingId: z.string(),
+        buildingId: z.string().uuid("Select a building"),
         roles: z
           .array(z.nativeEnum(ManagerRole))
           .min(1, "Select at least one role per building"),

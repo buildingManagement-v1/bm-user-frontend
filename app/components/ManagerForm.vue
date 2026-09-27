@@ -170,8 +170,8 @@ onMounted(() => {
       </template>
     </UFormField>
 
-    <UFormField label="Phone" name="phone">
-      <UInput v-model="state.phone" type="tel" placeholder="+1234567890" :ui="{ root: 'w-full' }" />
+    <UFormField label="Phone" name="phone" :required="mode === 'create'">
+      <UInput v-model="state.phone" type="tel" placeholder="+251 9..." :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <UFormField v-if="mode === 'edit'" label="Status" name="status">

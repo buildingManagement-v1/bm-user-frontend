@@ -20,6 +20,7 @@ const rejectModalOpen = ref(false)
 const rejectReason = ref('')
 const receiptModalOpen = ref(false)
 const receiptPreviewUrl = ref<string | null>(null)
+const receiptIsPdf = ref(false)
 
 const statusOptions = [
   { value: 'pending', label: 'Pending' },
@@ -137,8 +138,9 @@ async function viewReceipt(id: string) {
       `/v1/app/payment-requests/${id}/receipt`,
       { responseType: 'blob' }
     )
-    const url = URL.createObjectURL(blob as unknown as Blob)
-    receiptPreviewUrl.value = url
+    const file = blob as unknown as Blob
+    receiptIsPdf.value = file.type === 'application/pdf'
+    receiptPreviewUrl.value = URL.createObjectURL(file)
     receiptModalOpen.value = true
   } catch (e: any) {
     toast.add({ title: 'Failed to load receipt', description: e.message, color: 'error' })
@@ -282,7 +284,7 @@ watch(selectedBuildingId, () => {
     <UModal v-model:open="receiptModalOpen" title="Receipt" @close="closeReceiptPreview">
       <template #body>
         <div class="flex justify-center p-4">
-          <img v-if="receiptPreviewUrl" :src="receiptPreviewUrl" alt="Receipt" class="max-w-full max-h-[70vh] object-contain" />
+          <ReceiptPreview v-if="receiptPreviewUrl" :url="receiptPreviewUrl" :is-pdf="receiptIsPdf" />
         </div>
       </template>
     </UModal>

@@ -689,19 +689,22 @@ onMounted(() => {
               <p class="mt-1 text-2xl font-bold text-gray-900">ETB {{ revenueData.expectedRent.toLocaleString() }}</p>
             </UCard>
             <UCard variant="elevated">
-              <p class="text-sm text-gray-600">Collected (period, incl. VAT)</p>
+              <p class="text-sm text-gray-600">Rent collected (period, incl. VAT)</p>
               <p class="mt-1 text-2xl font-bold text-success-600">ETB {{ revenueData.collectedRent.toLocaleString() }}
               </p>
             </UCard>
             <UCard variant="elevated">
-              <p class="text-sm text-gray-600">Collection rate</p>
+              <p class="text-sm text-gray-600">Collection rate (rent)</p>
               <p class="mt-1 text-2xl font-bold">{{ revenueData.collectionRate }}%</p>
+              <p class="text-xs text-gray-500">
+                + ETB {{ revenueData.otherIncome.toLocaleString() }} deposits &amp; other income
+              </p>
             </UCard>
             <UCard variant="elevated">
-              <p class="text-sm text-gray-600">Outstanding</p>
+              <p class="text-sm text-gray-600">Outstanding (rent already due)</p>
               <p class="mt-1 text-2xl font-bold text-error-600">ETB {{ revenueData.outstanding.amount.toLocaleString()
                 }}</p>
-              <p class="text-xs text-gray-500">{{ revenueData.outstanding.count }} period(s)</p>
+              <p class="text-xs text-gray-500">{{ revenueData.outstanding.count }} period(s), incl. ended leases</p>
             </UCard>
           </div>
 

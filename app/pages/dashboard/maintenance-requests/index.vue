@@ -51,7 +51,6 @@ const isViewModalOpen = ref(false)
 const isUpdateModalOpen = ref(false)
 const selectedRequest = ref<MaintenanceRequest | null>(null)
 
-const userRole = ref<string>('')
 
 const columns: TableColumn<MaintenanceRequest>[] = [
   { accessorKey: 'title', header: 'Title' },
@@ -167,7 +166,7 @@ watch(selectedBuildingId, () => {
 
       <div class="flex items-center gap-3">
         <BuildingSelector v-model="selectedBuildingId" />
-        <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true"
+        <UButton color="primary" icon="i-heroicons-plus" @click="() => { isCreateModalOpen = true }"
           :disabled="!selectedBuildingId">
           New Request
         </UButton>
@@ -204,7 +203,8 @@ watch(selectedBuildingId, () => {
       />
       <UTable :data="requests" :columns="columns" :loading="loading">
         <template #tenant-cell="{ row }">
-          <span>{{ row.original.tenant.name }}</span>
+          <span v-if="row.original.tenant">{{ row.original.tenant.name }}</span>
+          <span v-else class="text-gray-400">Common area / staff</span>
         </template>
 
         <template #unit-cell="{ row }">
@@ -259,7 +259,7 @@ watch(selectedBuildingId, () => {
             <p class="text-gray-500 mb-4">
               {{ selectedBuildingId ? 'Submit your first request' : 'Select a building to view requests' }}
             </p>
-            <UButton v-if="selectedBuildingId" color="primary" @click="isCreateModalOpen = true">
+            <UButton v-if="selectedBuildingId" color="primary" @click="() => { isCreateModalOpen = true }">
               New Request
             </UButton>
           </div>
@@ -269,7 +269,7 @@ watch(selectedBuildingId, () => {
 
     <UModal v-model:open="isCreateModalOpen" title="New Maintenance Request">
       <template #body>
-        <MaintenanceRequestForm v-if="selectedBuildingId" :building-id="selectedBuildingId" :user-role="userRole"
+        <MaintenanceRequestForm v-if="selectedBuildingId" :building-id="selectedBuildingId"
           @success="handleSuccess" @cancel="isCreateModalOpen = false" />
       </template>
     </UModal>
@@ -320,7 +320,7 @@ watch(selectedBuildingId, () => {
           </div>
 
           <div class="flex justify-end">
-            <UButton color="neutral" variant="ghost" @click="isViewModalOpen = false">
+            <UButton color="neutral" variant="ghost" @click="() => { isViewModalOpen = false }">
               Close
             </UButton>
           </div>

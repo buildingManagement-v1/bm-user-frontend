@@ -17,6 +17,7 @@ function toggleSidebar() {
       <Header />
 
       <main class="p-8">
+        <SubscriptionBanner />
         <slot />
       </main>
     </div>

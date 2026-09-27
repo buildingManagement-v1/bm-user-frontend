@@ -79,7 +79,7 @@ onMounted(() => {
         <h1 class="text-2xl font-bold text-gray-900">Parking requests</h1>
         <p class="text-gray-600 mt-1">Request to register a vehicle for your unit</p>
       </div>
-      <UButton color="primary" icon="i-heroicons-plus" @click="isFormOpen = true">
+      <UButton color="primary" icon="i-heroicons-plus" @click="() => { isFormOpen = true }">
         Request parking
       </UButton>
     </div>
@@ -135,7 +135,7 @@ onMounted(() => {
         <template #empty>
           <div class="text-center py-12">
             <p class="text-gray-500">No parking requests yet. Submit one for approval.</p>
-            <UButton class="mt-4" color="primary" @click="isFormOpen = true">Request parking</UButton>
+            <UButton class="mt-4" color="primary" @click="() => { isFormOpen = true }">Request parking</UButton>
           </div>
         </template>
       </UTable>

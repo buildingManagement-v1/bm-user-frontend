@@ -225,7 +225,7 @@ async function confirmDeleteTenant() {
 }
 
 async function deleteLease(id: string) {
-  if (!confirm('Are you sure you want to delete this lease?')) return
+  if (!confirm('Remove this ended lease? Its payment history is kept.')) return
   if (!selectedBuildingId.value) return
 
   try {
@@ -292,7 +292,7 @@ watch(selectedBuildingId, () => {
 
       <div class="flex items-center gap-3">
         <BuildingSelector v-model="selectedBuildingId" />
-        <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true"
+        <UButton color="primary" icon="i-heroicons-plus" @click="() => { isCreateModalOpen = true }"
           :disabled="!selectedBuildingId">
           Add Tenant
         </UButton>
@@ -363,7 +363,7 @@ watch(selectedBuildingId, () => {
               {{ selectedBuildingId ? 'Get started by adding your first tenant' : 'Select a building to manage tenants'
               }}
             </p>
-            <UButton v-if="selectedBuildingId" color="primary" @click="isCreateModalOpen = true">
+            <UButton v-if="selectedBuildingId" color="primary" @click="() => { isCreateModalOpen = true }">
               Add Tenant
             </UButton>
           </div>
@@ -459,7 +459,7 @@ watch(selectedBuildingId, () => {
             </template>
 
             <template #rentAmount-cell="{ row }">
-              <span>ETB {{ row.original.rentAmount.toLocaleString() }}</span>
+              <span>ETB {{ Number(row.original.rentAmount).toLocaleString() }}</span>
             </template>
 
             <template #startDate-cell="{ row }">
@@ -480,11 +480,11 @@ watch(selectedBuildingId, () => {
 
             <template #actions-cell="{ row }">
               <div class="flex gap-2">
-                <UButton v-if="row.original.status !== 'terminated'" size="xs" color="neutral" variant="ghost"
-                  @click="openEditLeaseModal(row.original)">
-                  Edit
+                <UButton size="xs" color="neutral" variant="ghost" @click="openEditLeaseModal(row.original)">
+                  {{ row.original.status === 'active' ? 'Manage' : 'View' }}
                 </UButton>
-                <UButton size="xs" color="error" variant="ghost" @click="deleteLease(row.original.id)">
+                <UButton v-if="row.original.status !== 'active'" size="xs" color="error" variant="ghost"
+                  @click="deleteLease(row.original.id)">
                   Delete
                 </UButton>
               </div>
@@ -504,7 +504,8 @@ watch(selectedBuildingId, () => {
     </UModal>
 
     <!-- Lease Form Modal -->
-    <UModal v-model:open="isLeaseFormModalOpen" :title="leaseMode === 'create' ? 'Create Lease' : 'Edit Lease'">
+    <UModal v-model:open="isLeaseFormModalOpen"
+      :title="leaseMode === 'create' ? 'Create Lease' : selectedLease?.status === 'active' ? 'Manage Lease' : 'Lease Details'">
       <template #body>
         <LeaseForm v-if="selectedTenant && selectedBuildingId" :mode="leaseMode" :building-id="selectedBuildingId"
           :tenant-id="selectedTenant.id" :lease="selectedLease || undefined" @success="handleLeaseSuccess"

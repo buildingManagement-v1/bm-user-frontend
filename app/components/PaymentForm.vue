@@ -4,6 +4,7 @@ import { createPaymentSchema, type CreatePaymentSchema } from '~/schemas/payment
 import type { Payment, PaymentType, PaymentCalendar } from '~/types/payment'
 import type { Tenant } from '~/types/tenant'
 import type { ApiResponse } from '~/types'
+import { errorMessage } from '~/types/api'
 
 const props = defineProps<{
   buildingId: string
@@ -37,11 +38,10 @@ const state = reactive<{
 
 const loading = ref(false)
 const loadingTenants = ref(false)
-const loadingTenantDetails = ref(false)
 const loadingCalendar = ref(false)
 const tenants = ref<Tenant[]>([])
-const tenantDetails = ref<Tenant | null>(null)
 const paymentCalendar = ref<PaymentCalendar[]>([])
+const todayIso = new Date().toISOString().slice(0, 10)
 
 const typeOptions = [
   { value: 'rent', label: 'Rent' },
@@ -50,23 +50,21 @@ const typeOptions = [
   { value: 'other', label: 'Other' },
 ]
 
+// Former tenants may still owe rent, so everyone is listed
 const tenantOptions = computed(() =>
-  tenants.value
-    .filter(t => t.status === 'active')
-    .map(t => ({
-      value: t.id,
-      label: t.name,
-    }))
+  tenants.value.map(t => ({
+    value: t.id,
+    label: t.status === 'active' ? t.name : `${t.name} (inactive)`,
+  }))
 )
 
-// Units from the selected tenant's active leases (from tenant details fetch)
-const unitOptions = computed(() => {
-  const leases = tenantDetails.value?.leases?.filter(l => l.status === 'active') ?? []
-  return leases.map(l => ({
-    value: l.unit.id,
-    label: `Unit ${l.unit.unitNumber}`,
+// Units from the tenant's current leases and ended leases with rent owing
+const unitOptions = computed(() =>
+  paymentCalendar.value.map(c => ({
+    value: c.unitId,
+    label: c.status === 'active' ? `Unit ${c.unitNumber}` : `Unit ${c.unitNumber} (lease ${c.status} — rent owing)`,
   }))
-})
+)
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -104,23 +102,19 @@ const selectedTenant = computed({
   set: async (val: { value: string; label: string } | undefined) => {
     state.tenantId = val?.value || ''
     state.unitId = ''
-    tenantDetails.value = null
+    state.monthsCovered = []
     paymentCalendar.value = []
     if (state.tenantId) {
-      await fetchTenantDetails(state.tenantId)
+      await fetchPaymentCalendar(state.tenantId)
     }
   }
 })
 
 const selectedUnit = computed({
   get: () => unitOptions.value.find(u => u.value === state.unitId),
-  set: async (val: { value: string; label: string } | undefined) => {
+  set: (val: { value: string; label: string } | undefined) => {
     state.unitId = val?.value || ''
-    if (state.tenantId && state.unitId) {
-      await fetchPaymentCalendar(state.tenantId)
-    } else {
-      paymentCalendar.value = []
-    }
+    state.monthsCovered = []
   }
 })
 
@@ -184,26 +178,10 @@ async function fetchTenants() {
       '/v1/app/tenants'
     )
     tenants.value = response.data
-  } catch (error: any) {
-    toast.add({ title: 'Failed to fetch tenants', description: error.message, color: 'error' })
+  } catch (error) {
+    toast.add({ title: 'Failed to fetch tenants', description: errorMessage(error), color: 'error' })
   } finally {
     loadingTenants.value = false
-  }
-}
-
-async function fetchTenantDetails(tenantId: string) {
-  loadingTenantDetails.value = true
-  try {
-    const response = await buildingApi<ApiResponse<Tenant>>(
-      props.buildingId,
-      `/v1/app/tenants/${tenantId}`
-    )
-    tenantDetails.value = response.data
-  } catch (error: any) {
-    toast.add({ title: 'Failed to load tenant units', description: error.message, color: 'error' })
-    tenantDetails.value = null
-  } finally {
-    loadingTenantDetails.value = false
   }
 }
 
@@ -215,8 +193,8 @@ async function fetchPaymentCalendar(tenantId: string) {
       `/v1/app/payments/calendar/${tenantId}`
     )
     paymentCalendar.value = response.data
-  } catch (error: any) {
-    toast.add({ title: 'Failed to fetch payment calendar', description: error.message, color: 'error' })
+  } catch (error) {
+    toast.add({ title: 'Failed to fetch payment calendar', description: errorMessage(error), color: 'error' })
   } finally {
     loadingCalendar.value = false
   }
@@ -235,10 +213,10 @@ async function onSubmit(event: FormSubmitEvent<CreatePaymentSchema>) {
     )
     toast.add({ title: 'Payment recorded successfully', color: 'success' })
     emit('success')
-  } catch (error: any) {
+  } catch (error) {
     toast.add({
       title: 'Failed to record payment',
-      description: error.message,
+      description: errorMessage(error),
       color: 'error'
     })
   } finally {
@@ -262,12 +240,12 @@ onMounted(() => {
       <USelectMenu
         v-model="selectedUnit"
         :items="unitOptions"
-        :loading="loadingTenantDetails"
+        :loading="loadingCalendar"
         placeholder="Select unit"
         class="w-full"
       />
-      <template v-if="!loadingTenantDetails && tenantDetails && (!tenantDetails.leases?.length || !unitOptions.length)" #hint>
-        <span class="text-xs text-amber-600">This tenant has no active leases.</span>
+      <template v-if="!loadingCalendar && !unitOptions.length" #hint>
+        <span class="text-xs text-amber-600">This tenant has no current lease or unpaid rent.</span>
       </template>
     </UFormField>
 
@@ -312,7 +290,7 @@ onMounted(() => {
     </UFormField>
 
     <UFormField label="Payment Date" name="paymentDate" required>
-      <UInput v-model="state.paymentDate" type="date" :ui="{ root: 'w-full' }" />
+      <UInput v-model="state.paymentDate" type="date" :max="todayIso" :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <UFormField label="Notes" name="notes">

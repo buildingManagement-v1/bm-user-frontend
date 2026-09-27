@@ -112,7 +112,7 @@ watch(selectedBuildingId, () => {
         <UButton
           color="primary"
           icon="i-heroicons-plus"
-          @click="isRegisterModalOpen = true"
+          @click="() => { isRegisterModalOpen = true }"
           :disabled="!selectedBuildingId"
         >
           Register car
@@ -184,7 +184,7 @@ watch(selectedBuildingId, () => {
             <p class="text-gray-500 mb-4">
               {{ selectedBuildingId ? 'Register a tenant vehicle to get started' : 'Select a building to view parking' }}
             </p>
-            <UButton v-if="selectedBuildingId" color="primary" @click="isRegisterModalOpen = true">
+            <UButton v-if="selectedBuildingId" color="primary" @click="() => { isRegisterModalOpen = true }">
               Register car
             </UButton>
           </div>
