@@ -16,6 +16,13 @@ export const createPaymentRequestSchema = z.object({
       message: "Select at least one payment period",
     });
   }
+  if (data.paymentDate > new Date().toISOString().slice(0, 10)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["paymentDate"],
+      message: "Payment date cannot be in the future",
+    });
+  }
 });
 
 export type CreatePaymentRequestSchema = z.output<typeof createPaymentRequestSchema>;

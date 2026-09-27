@@ -4,9 +4,29 @@ import type {
   TenantAuthData,
   LoginResponse,
   ApiResponse,
+  PasswordChangeResponse,
 } from "~/types";
+import { toApiError } from "./useApi";
 
 export type UserType = "user" | "manager" | "tenant";
+
+const endpoints: Record<UserType, { login: string; refresh: string; changePassword: string }> = {
+  user: {
+    login: "/v1/app/auth/login",
+    refresh: "/v1/app/auth/refresh",
+    changePassword: "/v1/app/auth/change-password",
+  },
+  manager: {
+    login: "/v1/manager/auth/login",
+    refresh: "/v1/manager/auth/refresh",
+    changePassword: "/v1/manager/auth/change-password",
+  },
+  tenant: {
+    login: "/v1/tenant/auth/login",
+    refresh: "/v1/tenant/auth/refresh",
+    changePassword: "/v1/tenant/auth/change-password",
+  },
+};
 
 export const useAuth = () => {
   const config = useRuntimeConfig();
@@ -32,57 +52,60 @@ export const useAuth = () => {
     maxAge: 60 * 60 * 24 * 7,
   });
 
+  const setUser = (value: User | Manager | TenantAuthData | null) => {
+    user.value = value;
+    userCookie.value = value;
+  };
+
+  /**
+   * Signs in. A tenant whose email exists in several buildings gets a 409
+   * ApiError with code BUILDING_SELECTION_REQUIRED and the building list;
+   * retry with `buildingId`.
+   */
   const login = async (
     email: string,
     password: string,
     type: UserType = "user",
-    rememberMe: boolean = true
+    rememberMe: boolean = true,
+    buildingId?: string
   ) => {
     try {
-      const endpoint =
-        type === "user"
-          ? "/v1/app/auth/login"
-          : type === "manager"
-          ? "/v1/manager/auth/login"
-          : "/v1/tenant/auth/login";
-
       const response = await $fetch<ApiResponse<LoginResponse>>(
-        `${config.public.apiUrl}${endpoint}`,
+        `${config.public.apiUrl}${endpoints[type].login}`,
         {
           method: "POST",
-          body: { email, password, rememberMe },
+          body: {
+            email,
+            password,
+            rememberMe,
+            ...(type === "tenant" && buildingId ? { buildingId } : {}),
+          },
         }
       );
 
       token.value = response.data.accessToken;
       refreshToken.value = response.data.refreshToken;
 
+      const mustResetPassword = response.data.mustResetPassword || false;
       let userData: User | Manager | TenantAuthData;
       if (type === "user") {
-        userData = response.data.user!;
+        userData = { ...response.data.user!, mustResetPassword };
       } else if (type === "manager") {
-        userData = {
-          ...response.data.manager!,
-          mustResetPassword: response.data.mustResetPassword || false,
-        };
+        userData = { ...response.data.manager!, mustResetPassword };
       } else {
-        userData = {
-          ...response.data.tenant!,
-          mustResetPassword: response.data.mustResetPassword || false,
-        };
+        userData = { ...response.data.tenant!, mustResetPassword };
       }
 
-      user.value = userData;
-      userCookie.value = userData;
+      setUser(userData);
       userType.value = type;
 
       return response;
-    } catch (error: any) {
-      const message = error.data?.message || error.message || "Login failed";
-      throw new Error(message);
+    } catch (error) {
+      throw toApiError(error, "Login failed");
     }
   };
 
+  /** Creates an owner account; the caller sends them to sign in. */
   const register = async (
     name: string,
     email: string,
@@ -90,38 +113,27 @@ export const useAuth = () => {
     phone?: string
   ) => {
     try {
-      const response = await $fetch<ApiResponse<LoginResponse>>(
+      return await $fetch<ApiResponse<{ id: string; name: string; email: string }>>(
         `${config.public.apiUrl}/v1/app/auth/register`,
         {
           method: "POST",
           body: { name, email, password, phone },
         }
       );
-
-      token.value = response.data.accessToken;
-      refreshToken.value = response.data.refreshToken;
-
-      const userData = response.data.user;
-      user.value = userData!;
-      userCookie.value = userData!;
-      userType.value = "user";
-
-      return response;
-    } catch (error: any) {
-      const message =
-        error.data?.message || error.message || "Registration failed";
-      throw new Error(message);
+    } catch (error) {
+      throw toApiError(error, "Registration failed");
     }
   };
 
   const logout = () => {
     token.value = null;
     refreshToken.value = null;
-    user.value = null;
-    userCookie.value = null;
+    setUser(null);
     userType.value = null;
     const selectedBuildingId = useCookie<string>("selectedBuildingId");
     selectedBuildingId.value = "";
+    const { resetSubscription } = useSubscription();
+    resetSubscription();
     router.push("/login");
   };
 
@@ -130,15 +142,8 @@ export const useAuth = () => {
       throw new Error("No refresh token available");
     }
 
-    const endpoint =
-      userType.value === "user"
-        ? "/v1/app/auth/refresh"
-        : userType.value === "manager"
-          ? "/v1/manager/auth/refresh"
-          : "/v1/tenant/auth/refresh";
-
     const response = await $fetch<ApiResponse<{ accessToken: string }>>(
-      `${config.public.apiUrl}${endpoint}`,
+      `${config.public.apiUrl}${endpoints[userType.value].refresh}`,
       {
         method: "POST",
         body: { refreshToken: refreshToken.value },
@@ -149,61 +154,63 @@ export const useAuth = () => {
     return response.data.accessToken;
   };
 
+  /**
+   * Changing the password revokes every other session; the server hands this
+   * session fresh tokens, which are stored here.
+   */
   const changePassword = async (oldPassword: string, newPassword: string) => {
+    if (!userType.value) throw new Error("Not signed in");
     try {
-      const endpoint =
-        userType.value === "user"
-          ? "/v1/app/auth/change-password"
-          : userType.value === "manager"
-            ? "/v1/manager/auth/change-password"
-            : "/v1/tenant/auth/change-password";
+      const response = await $fetch<ApiResponse<PasswordChangeResponse>>(
+        `${config.public.apiUrl}${endpoints[userType.value].changePassword}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token.value}`,
+          },
+          body: { currentPassword: oldPassword, newPassword },
+        }
+      );
 
-      await $fetch(`${config.public.apiUrl}${endpoint}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-        body: { currentPassword: oldPassword, newPassword },
-      });
-
-      // Clear the forced-reset flag for managers and tenants
-      if (user.value && "mustResetPassword" in user.value) {
-        const updatedUser = { ...user.value, mustResetPassword: false };
-        user.value = updatedUser;
-        userCookie.value = updatedUser;
+      if (response.data?.accessToken) {
+        token.value = response.data.accessToken;
+        refreshToken.value = response.data.refreshToken;
       }
-    } catch (error: any) {
-      const message =
-        error.data?.message || error.message || "Password change failed";
-      throw new Error(message);
+
+      if (user.value) {
+        setUser({ ...user.value, mustResetPassword: false });
+      }
+    } catch (error) {
+      throw toApiError(error, "Password change failed");
     }
   };
 
-  const updateEmail = async (newEmail: string) => {
+  /** Owners and managers; the current password confirms the change. */
+  const updateEmail = async (newEmail: string, currentPassword: string) => {
     if (userType.value !== "user" && userType.value !== "manager") {
       throw new Error("Not available");
     }
     const endpoint =
-      userType.value === "user"
-        ? "/v1/app/auth/me"
-        : "/v1/manager/auth/me";
+      userType.value === "user" ? "/v1/app/auth/me" : "/v1/manager/auth/me";
 
-    const response = await $fetch<ApiResponse<{ email: string }>>(
-      `${config.public.apiUrl}${endpoint}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-        body: { email: newEmail },
+    try {
+      const response = await $fetch<ApiResponse<{ email: string }>>(
+        `${config.public.apiUrl}${endpoint}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token.value}`,
+          },
+          body: { email: newEmail, currentPassword },
+        }
+      );
+
+      const newEmailValue = response.data?.email ?? newEmail;
+      if (user.value) {
+        setUser({ ...user.value, email: newEmailValue });
       }
-    );
-
-    const newEmailValue = response.data?.email ?? newEmail;
-    if (user.value && "email" in user.value) {
-      const updatedUser = { ...user.value, email: newEmailValue };
-      user.value = updatedUser;
-      userCookie.value = updatedUser;
+    } catch (error) {
+      throw toApiError(error, "Email update failed");
     }
   };
 
@@ -223,10 +230,8 @@ export const useAuth = () => {
         }
       );
       return response.data;
-    } catch (error: any) {
-      const message =
-        error.data?.message || error.message || "Account deletion failed";
-      throw new Error(message);
+    } catch (error) {
+      throw toApiError(error, "Account deletion failed");
     }
   };
 
@@ -238,6 +243,7 @@ export const useAuth = () => {
     userType,
     token,
     refreshToken,
+    setUser,
     login,
     register,
     logout,

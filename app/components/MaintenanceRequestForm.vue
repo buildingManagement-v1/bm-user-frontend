@@ -5,10 +5,10 @@ import type { MaintenanceRequest, MaintenanceRequestPriority } from '~/types/mai
 import type { Unit } from '~/types/unit'
 import type { Tenant } from '~/types/tenant'
 import type { ApiResponse } from '~/types'
+import { errorMessage } from '~/types/api'
 
 const props = defineProps<{
   buildingId: string
-  userRole?: string
 }>()
 
 const emit = defineEmits<{
@@ -24,21 +24,19 @@ const state = reactive<{
   description: string
   priority: MaintenanceRequestPriority
   tenantId?: string
+  unitId?: string
 }>({
   title: '',
   description: '',
   priority: 'medium' as MaintenanceRequestPriority,
   tenantId: undefined,
+  unitId: undefined,
 })
 
 const loading = ref(false)
-const loadingTenants = ref(false)
+const loadingOptions = ref(false)
 const tenants = ref<Tenant[]>([])
-
-const isManagerOrOwner = computed(() => props.userRole === 'manager' || !props.userRole)
-const selectedTenantUnit = computed(() =>
-  tenants.value.find(t => t.id === state.tenantId)?.unit
-)
+const units = ref<Unit[]>([])
 
 const priorityOptions = [
   { value: 'low', label: 'Low' },
@@ -50,10 +48,14 @@ const priorityOptions = [
 const tenantOptions = computed(() =>
   tenants.value
     .filter(t => t.status === 'active')
-    .map(t => ({
-      value: t.id,
-      label: `${t.name} ${t.unit ? `(${t.unit.unitNumber})` : ''}`,
-    }))
+    .map(t => ({ value: t.id, label: t.name }))
+)
+
+const unitOptions = computed(() =>
+  units.value.map(u => ({
+    value: u.id,
+    label: `Unit ${u.unitNumber}${u.floor ? ` (Floor ${u.floor})` : ''}`,
+  }))
 )
 
 const selectedPriority = computed({
@@ -70,20 +72,26 @@ const selectedTenant = computed({
   }
 })
 
-async function fetchTenants() {
-  if (!isManagerOrOwner.value) return
+const selectedUnit = computed({
+  get: () => unitOptions.value.find(u => u.value === state.unitId),
+  set: (val: { value: string; label: string } | undefined) => {
+    state.unitId = val?.value
+  }
+})
 
-  loadingTenants.value = true
+async function fetchOptions() {
+  loadingOptions.value = true
   try {
-    const response = await buildingApi<ApiResponse<Tenant[]>>(
-      props.buildingId,
-      '/v1/app/tenants'
-    )
-    tenants.value = response.data
-  } catch (error: any) {
-    toast.add({ title: 'Failed to fetch tenants', description: error.message, color: 'error' })
+    const [tenantRes, unitRes] = await Promise.all([
+      buildingApi<ApiResponse<Tenant[]>>(props.buildingId, '/v1/app/tenants'),
+      buildingApi<ApiResponse<Unit[]>>(props.buildingId, '/v1/app/units'),
+    ])
+    tenants.value = tenantRes.data
+    units.value = unitRes.data
+  } catch (error) {
+    toast.add({ title: 'Failed to load tenants and units', description: errorMessage(error), color: 'error' })
   } finally {
-    loadingTenants.value = false
+    loadingOptions.value = false
   }
 }
 
@@ -98,12 +106,12 @@ async function onSubmit(event: FormSubmitEvent<CreateMaintenanceRequestSchema>) 
         body: event.data,
       }
     )
-    toast.add({ title: 'Maintenance request submitted successfully', color: 'success' })
+    toast.add({ title: 'Maintenance request created', color: 'success' })
     emit('success')
-  } catch (error: any) {
+  } catch (error) {
     toast.add({
-      title: 'Failed to submit request',
-      description: error.message,
+      title: 'Failed to create request',
+      description: errorMessage(error),
       color: 'error'
     })
   } finally {
@@ -111,17 +119,24 @@ async function onSubmit(event: FormSubmitEvent<CreateMaintenanceRequestSchema>) 
   }
 }
 
-onMounted(() => {
-  fetchTenants()
-})
+onMounted(fetchOptions)
 </script>
 
 <template>
-  <UForm :schema="createMaintenanceRequestSchema" :state="state" @submit="onSubmit" class="space-y-4">
-    <UFormField v-if="isManagerOrOwner" label="Tenant" name="tenantId" required>
-      <USelectMenu v-model="selectedTenant" :items="tenantOptions" :loading="loadingTenants" placeholder="Select tenant"
-        class="w-full" />
-    </UFormField>
+  <UForm :schema="createMaintenanceRequestSchema" :state="state" class="space-y-4" @submit="onSubmit">
+    <div class="grid grid-cols-2 gap-4">
+      <UFormField label="Tenant" name="tenantId" hint="Optional">
+        <USelectMenu v-model="selectedTenant" :items="tenantOptions" :loading="loadingOptions"
+          placeholder="No tenant" class="w-full" />
+      </UFormField>
+      <UFormField label="Unit" name="unitId" hint="Optional">
+        <USelectMenu v-model="selectedUnit" :items="unitOptions" :loading="loadingOptions"
+          :placeholder="state.tenantId ? 'Tenant\'s unit' : 'Common area'" class="w-full" />
+      </UFormField>
+    </div>
+    <p class="text-xs text-gray-500 -mt-2">
+      Leave both empty for common areas (lobby, lifts, …). With a tenant and no unit, their leased unit is used.
+    </p>
 
     <UFormField label="Title" name="title" required>
       <UInput v-model="state.title" placeholder="Brief description of the issue" :ui="{ root: 'w-full' }" />
@@ -132,11 +147,6 @@ onMounted(() => {
         :ui="{ root: 'w-full' }" />
     </UFormField>
 
-    <div v-if="selectedTenantUnit" class="text-sm text-gray-600">
-      Unit: {{ selectedTenantUnit.unitNumber }}
-      <span v-if="selectedTenantUnit.floor">(Floor {{ selectedTenantUnit.floor }})</span>
-    </div>
-
     <UFormField label="Priority" name="priority">
       <USelectMenu v-model="selectedPriority" :items="priorityOptions" class="w-full" />
     </UFormField>
@@ -146,7 +156,7 @@ onMounted(() => {
         Cancel
       </UButton>
       <UButton type="submit" color="primary" :loading="loading">
-        Submit Request
+        Create Request
       </UButton>
     </div>
   </UForm>

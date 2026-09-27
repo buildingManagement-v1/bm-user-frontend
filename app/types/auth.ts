@@ -5,7 +5,8 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
-  status: "active" | "inactive";
+  status?: "active" | "inactive";
+  mustResetPassword?: boolean;
 }
 
 export interface TenantAuthData {
@@ -17,11 +18,6 @@ export interface TenantAuthData {
     id: string;
     name: string;
   };
-  unit: {
-    id: string;
-    unitNumber: string;
-    floor?: number;
-  } | null;
   mustResetPassword?: boolean;
 }
 
@@ -34,4 +30,17 @@ export interface LoginResponse {
   manager?: Manager;
   tenant?: TenantAuthData;
   mustResetPassword?: boolean;
+}
+
+/** Tokens handed back when a password change revokes older sessions. */
+export interface PasswordChangeResponse {
+  message: string;
+  accessToken: string;
+  refreshToken: string;
+}
+
+/** 409 body when a tenant's email exists in several buildings. */
+export interface BuildingChoice {
+  id: string;
+  name: string;
 }

@@ -32,7 +32,7 @@ onUnmounted(() => {
 
 <template>
   <div class="relative">
-    <UButton color="neutral" variant="ghost" icon="i-heroicons-bell" @click="isOpen = !isOpen" class="relative">
+    <UButton color="neutral" variant="ghost" icon="i-heroicons-bell" @click="() => { isOpen = !isOpen }" class="relative">
       <UBadge v-if="unreadCount > 0" :label="unreadCount > 99 ? '99+' : unreadCount.toString()" color="error"
         class="absolute -top-1 -right-1" />
     </UButton>

@@ -76,7 +76,7 @@ onMounted(() => {
         <p class="text-gray-600 mt-1">Submit and track your maintenance requests</p>
       </div>
 
-      <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true">
+      <UButton color="primary" icon="i-heroicons-plus" @click="() => { isCreateModalOpen = true }">
         New Request
       </UButton>
     </div>
@@ -128,7 +128,7 @@ onMounted(() => {
             <UIcon name="i-heroicons-wrench-screwdriver" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p class="text-gray-900 font-medium mb-2">No maintenance requests yet</p>
             <p class="text-gray-500 mb-4">Submit your first maintenance request</p>
-            <UButton color="primary" @click="isCreateModalOpen = true">
+            <UButton color="primary" @click="() => { isCreateModalOpen = true }">
               New Request
             </UButton>
           </div>

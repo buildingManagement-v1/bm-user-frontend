@@ -18,6 +18,8 @@ export interface Building {
   withholdingRate: number;
   paymentCollectionDay: number;
   totalParkingLots: number;
+  /** Days after the collection day before unpaid rent is overdue */
+  paymentGraceDays: number;
   status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;

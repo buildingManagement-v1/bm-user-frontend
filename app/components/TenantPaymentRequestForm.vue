@@ -2,7 +2,8 @@
 import type { PaymentType, PaymentCalendar, PaymentPeriod } from '~/types/payment'
 import type { ApiResponse } from '~/types'
 import type { TenantPaymentRequest } from '~/types/payment-request'
-import { createPaymentRequestSchema, type CreatePaymentRequestSchema } from '~/schemas/payment-request'
+import { createPaymentRequestSchema } from '~/schemas/payment-request'
+import { errorMessage } from '~/types/api'
 
 const emit = defineEmits<{
   success: []
@@ -30,11 +31,9 @@ const state = reactive<{
 
 const receiptFile = ref<File | null>(null)
 const loading = ref(false)
-const loadingProfile = ref(false)
 const loadingCalendar = ref(false)
-interface LeaseOption { unit: { id: string; unitNumber: string; floor?: number }; status: string }
-const profileLeases = ref<LeaseOption[]>([])
 const paymentCalendar = ref<PaymentCalendar[]>([])
+const todayIso = new Date().toISOString().slice(0, 10)
 
 const typeOptions = [
   { value: 'rent', label: 'Rent' },
@@ -43,11 +42,15 @@ const typeOptions = [
   { value: 'other', label: 'Other' },
 ]
 
-const unitOptions = computed(() => {
-  return profileLeases.value
-    .filter(l => l.status === 'active' && l.unit)
-    .map(l => ({ value: l.unit.id, label: `Unit ${l.unit.unitNumber}` }))
-})
+// Rent can be paid on ended leases that still owe; other payments need a current lease
+const unitOptions = computed(() =>
+  paymentCalendar.value
+    .filter(c => state.type === 'rent' || c.status === 'active')
+    .map(c => ({
+      value: c.unitId,
+      label: c.status === 'active' ? `Unit ${c.unitNumber}` : `Unit ${c.unitNumber} (lease ended — rent owing)`,
+    }))
+)
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -114,25 +117,13 @@ watch(computedAmount, (val) => {
   if (isRentType.value) state.amount = val
 }, { immediate: true })
 
-async function fetchProfile() {
-  loadingProfile.value = true
-  try {
-    const res = await api<ApiResponse<{ leases: LeaseOption[] }>>('/v1/tenant/profile')
-    profileLeases.value = res.data?.leases ?? []
-  } catch (e: any) {
-    toast.add({ title: 'Failed to load units', description: e.message, color: 'error' })
-  } finally {
-    loadingProfile.value = false
-  }
-}
-
 async function fetchCalendar() {
   loadingCalendar.value = true
   try {
     const res = await api<ApiResponse<PaymentCalendar[]>>('/v1/tenant/payment-calendar')
     paymentCalendar.value = res.data ?? []
-  } catch (e: any) {
-    toast.add({ title: 'Failed to load calendar', description: e.message, color: 'error' })
+  } catch (e) {
+    toast.add({ title: 'Failed to load calendar', description: errorMessage(e), color: 'error' })
   } finally {
     loadingCalendar.value = false
   }
@@ -141,17 +132,17 @@ async function fetchCalendar() {
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (file && file.type.startsWith('image/')) {
+  if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
     receiptFile.value = file
   } else if (file) {
-    toast.add({ title: 'Please select an image file (JPG, PNG, etc.)', color: 'error' })
+    toast.add({ title: 'Please select an image (JPG, PNG, WEBP) or a PDF', color: 'error' })
     receiptFile.value = null
   }
 }
 
 async function onSubmit() {
   if (!receiptFile.value) {
-    toast.add({ title: 'Please upload a receipt image', color: 'error' })
+    toast.add({ title: 'Please upload your receipt', color: 'error' })
     return
   }
   loading.value = true
@@ -171,15 +162,19 @@ async function onSubmit() {
     })
     toast.add({ title: 'Payment request submitted. It will be reviewed by management.', color: 'success' })
     emit('success')
-  } catch (e: any) {
-    toast.add({ title: 'Failed to submit request', description: e.message, color: 'error' })
+  } catch (e) {
+    toast.add({ title: 'Failed to submit request', description: errorMessage(e), color: 'error' })
   } finally {
     loading.value = false
   }
 }
 
+watch(() => state.type, () => {
+  if (!unitOptions.value.some(u => u.value === state.unitId)) state.unitId = ''
+  state.monthsCovered = []
+})
+
 onMounted(() => {
-  fetchProfile()
   fetchCalendar()
 })
 </script>
@@ -190,7 +185,7 @@ onMounted(() => {
       <USelectMenu
         :model-value="unitOptions.find(u => u.value === state.unitId)"
         :items="unitOptions"
-        :loading="loadingProfile"
+        :loading="loadingCalendar"
         placeholder="Select unit"
         class="w-full"
         @update:model-value="(v: { value: string } | undefined) => { state.unitId = v?.value ?? '' }"
@@ -250,11 +245,11 @@ onMounted(() => {
     </UFormField>
 
     <UFormField label="Payment Date" name="paymentDate" required>
-      <UInput v-model="state.paymentDate" type="date" :ui="{ root: 'w-full' }" />
+      <UInput v-model="state.paymentDate" type="date" :max="todayIso" :ui="{ root: 'w-full' }" />
     </UFormField>
 
-    <UFormField label="Receipt image" required>
-      <UInput type="file" accept="image/*" @change="onFileChange" :ui="{ root: 'w-full' }" />
+    <UFormField label="Receipt (image or PDF)" required>
+      <UInput type="file" accept="image/*,application/pdf" :ui="{ root: 'w-full' }" @change="onFileChange" />
       <template v-if="receiptFile" #hint>
         <span class="text-xs text-gray-500">{{ receiptFile.name }}</span>
       </template>

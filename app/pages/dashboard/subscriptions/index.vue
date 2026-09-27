@@ -1,67 +1,49 @@
 <script setup lang="ts">
-import type { ApiResponse } from '~/types/api'
-
-interface Subscription {
-  id: string
-  totalAmount: string
-  billingCycleStart: string
-  billingCycleEnd: string
-  nextBillingDate: string
-  status: string
-  plan?: {
-    id: string
-    name: string
-    price: number
-    type: string
-    features: {
-      maxBuildings: number
-      maxUnits: number
-      maxManagers: number
-      premiumFeatures: string[]
-    }
-  }
-}
-
-interface UsageStats {
-  buildingsUsed: number
-  unitsUsed: number
-  managersUsed: number
-}
+import type { TableColumn } from '@nuxt/ui'
+import type { ApiResponse, SubscriptionRequest } from '~/types'
+import { errorMessage } from '~/types/api'
 
 const { api } = useApi()
 const toast = useToast()
-const router = useRouter()
+const { subscriptionState, checkSubscription, daysLeft } = useSubscription()
 
-const subscription = ref<Subscription | null>(null)
-const usage = ref<UsageStats>({ buildingsUsed: 0, unitsUsed: 0, managersUsed: 0 })
 const loading = ref(false)
+const requests = ref<SubscriptionRequest[]>([])
 
-const daysRemaining = computed(() => {
-  if (!subscription.value) return 0
-  const end = new Date(subscription.value.billingCycleEnd)
-  const now = new Date()
-  const diff = end.getTime() - now.getTime()
-  return Math.ceil(diff / (1000 * 60 * 60 * 24))
-})
+const subscription = computed(() => subscriptionState.value?.data ?? null)
+const billing = computed(() => subscriptionState.value?.billing ?? null)
+const usage = computed(() => subscriptionState.value?.usage ?? { buildingsUsed: 0, unitsUsed: 0, managersUsed: 0 })
+const lastPlan = computed(() => subscription.value ?? billing.value?.expiredSubscription ?? null)
+const isExpiringSoon = computed(() => !!subscription.value && daysLeft.value <= 30 && daysLeft.value > 0)
 
-const isExpiringSoon = computed(() => daysRemaining.value <= 30 && daysRemaining.value > 0)
+const formatDate = (d: string) =>
+  new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
-const maxUnitsAllowed = computed(() => {
-  if (!subscription.value?.plan) return 0
-  const max = subscription.value.plan.features.maxUnits * Math.max(usage.value.buildingsUsed, 1)
-  return max
-})
+const requestColumns: TableColumn<SubscriptionRequest>[] = [
+  { accessorKey: 'createdAt', header: 'Submitted' },
+  { accessorKey: 'plan', header: 'Plan' },
+  { accessorKey: 'amount', header: 'Amount' },
+  { accessorKey: 'status', header: 'Status' },
+  { id: 'details', header: '' },
+]
 
-async function fetchSubscription() {
+const statusColor: Record<string, 'warning' | 'success' | 'error' | 'neutral'> = {
+  pending: 'warning',
+  approved: 'success',
+  rejected: 'error',
+  cancelled: 'neutral',
+}
+
+async function load() {
   loading.value = true
   try {
-    const response = await api<ApiResponse<Subscription | null> & { usage: UsageStats }>(
-      '/v1/app/subscriptions/my-subscription'
-    )
-    subscription.value = response.data ?? null
-    usage.value = response.usage ?? { buildingsUsed: 0, unitsUsed: 0, managersUsed: 0 }
+    const [, reqs] = await Promise.all([
+      checkSubscription(),
+      api<ApiResponse<SubscriptionRequest[]>>('/v1/app/subscriptions/requests'),
+    ])
+    requests.value = reqs.data
   } catch (error) {
-    toast.add({ title: 'Failed to fetch subscription', color: 'error' })
+    toast.add({ title: 'Failed to load subscription', description: errorMessage(error), color: 'error' })
   } finally {
     loading.value = false
   }
@@ -76,86 +58,64 @@ function getUsageColor(used: number, max: number) {
 }
 
 async function downloadInvoice() {
-  if (!subscription.value) return
-
+  if (!lastPlan.value) return
   try {
-    const response = await api(
-      `/v1/platform/subscriptions/${subscription.value.id}/download`,
-      { responseType: 'blob' }
-    )
-
-    const url = window.URL.createObjectURL(new Blob([response]))
+    const blob = await api<Blob>(`/v1/app/subscriptions/${lastPlan.value.id}/invoice`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `subscription-invoice-${subscription.value.id}.pdf`)
+    link.setAttribute('download', `subscription-invoice-${lastPlan.value.id}.pdf`)
     document.body.appendChild(link)
     link.click()
     link.remove()
     window.URL.revokeObjectURL(url)
-
-    toast.add({ title: 'Invoice downloaded', color: 'success' })
-  } catch (error: any) {
-    toast.add({ title: 'Failed to download invoice', description: error.message, color: 'error' })
+  } catch (error) {
+    toast.add({ title: 'Failed to download invoice', description: errorMessage(error), color: 'error' })
   }
 }
 
-function goToPlans() {
-  router.push('/dashboard/plans')
-}
-
-onMounted(() => {
-  fetchSubscription()
-})
+onMounted(load)
 </script>
 
 <template>
   <div class="space-y-8">
-    <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
-        My Subscription
-      </h1>
-      <p class="mt-1.5 text-zinc-500">
-        View and manage your subscription and usage
-      </p>
-    </div>
-
-    <div v-if="loading" class="flex justify-center py-16">
-      <UIcon name="i-heroicons-arrow-path" class="h-10 w-10 animate-spin text-primary-500" />
-    </div>
-
-    <div v-else-if="!subscription" class="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-800/30 py-16 text-center">
-      <UIcon name="i-heroicons-cube-transparent" class="mx-auto mb-4 h-16 w-16 text-zinc-400" />
-      <h3 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">No active subscription</h3>
-      <p class="mt-2 max-w-sm mx-auto text-zinc-500">
-        Subscribe to a plan to start adding buildings, units, and managers.
-      </p>
-      <UButton color="primary" size="lg" class="mt-6" @click="goToPlans">
-        View plans
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
+          My Subscription
+        </h1>
+        <p class="mt-1.5 text-zinc-500">Your plan, usage and plan requests</p>
+      </div>
+      <UButton color="primary" to="/dashboard/plans" icon="i-heroicons-arrow-path-rounded-square">
+        {{ subscription && !billing?.isTrial ? 'Renew or change plan' : 'Choose a plan' }}
       </UButton>
     </div>
 
-    <div v-else class="space-y-8">
-      <!-- Expiring soon -->
-      <UAlert
-        v-if="isExpiringSoon"
-        color="warning"
-        icon="i-heroicons-exclamation-triangle"
-        title="Subscription expiring soon"
-        :description="`Your subscription will expire in ${daysRemaining} days on ${new Date(subscription.billingCycleEnd).toLocaleDateString()}. Consider renewing or upgrading.`"
-      />
+    <div v-if="loading && !subscriptionState" class="flex justify-center py-16">
+      <UIcon name="i-heroicons-arrow-path" class="h-10 w-10 animate-spin text-primary-500" />
+    </div>
 
-      <!-- Current plan + Usage in one row -->
-      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <!-- Current plan card -->
+    <template v-else>
+      <UAlert v-if="isExpiringSoon" color="warning" icon="i-heroicons-exclamation-triangle"
+        :title="billing?.isTrial ? 'Free trial ending soon' : 'Subscription expiring soon'"
+        :description="`It ends in ${daysLeft} day(s) on ${formatDate(subscription!.billingCycleEnd)}. After that your account becomes read-only until a plan is activated.`" />
+
+      <div v-if="!lastPlan" class="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/50 py-16 text-center">
+        <UIcon name="i-heroicons-cube-transparent" class="mx-auto mb-4 h-16 w-16 text-zinc-400" />
+        <h3 class="text-lg font-semibold text-zinc-900">No subscription yet</h3>
+        <p class="mt-2 max-w-sm mx-auto text-zinc-500">Choose a plan to start adding buildings, units and managers.</p>
+      </div>
+
+      <div v-else class="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <UCard variant="elevated" class="lg:col-span-2">
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="text-base font-semibold text-zinc-800 dark:text-zinc-200">Current plan</h2>
+              <h2 class="text-base font-semibold text-zinc-800">{{ subscription ? 'Current plan' : 'Last plan' }}</h2>
               <div class="flex items-center gap-2">
-                <UBadge v-if="subscription.plan?.type === 'custom'" color="primary" variant="subtle">Custom</UBadge>
-                <UBadge :color="subscription.status === 'active' ? 'success' : 'warning'" variant="subtle" class="capitalize">
-                  {{ subscription.status }}
+                <UBadge v-if="billing?.isTrial" color="neutral" variant="subtle">Free trial</UBadge>
+                <UBadge v-if="lastPlan.plan?.type === 'custom'" color="primary" variant="subtle">Custom</UBadge>
+                <UBadge :color="subscription ? 'success' : 'error'" variant="subtle">
+                  {{ subscription ? 'Active' : 'Ended — read-only' }}
                 </UBadge>
               </div>
             </div>
@@ -163,129 +123,89 @@ onMounted(() => {
 
           <div class="space-y-6">
             <div class="flex flex-wrap items-baseline gap-2">
-              <span class="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                {{ subscription.plan?.name || 'N/A' }}
-              </span>
-              <span class="text-xl font-semibold text-primary-600 dark:text-primary-400">
-                ETB {{ subscription.totalAmount }}
-              </span>
-              <span class="text-zinc-500">/ year</span>
+              <span class="text-2xl font-bold text-zinc-900">{{ lastPlan.plan?.name }}</span>
+              <template v-if="Number(lastPlan.totalAmount) > 0">
+                <span class="text-xl font-semibold text-primary-600">
+                  ETB {{ Number(lastPlan.totalAmount).toLocaleString() }}
+                </span>
+                <span class="text-zinc-500">/ year</span>
+              </template>
             </div>
 
-            <div v-if="subscription.plan" class="space-y-2.5 border-t border-zinc-200 dark:border-zinc-700 pt-4">
-              <div class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <UIcon name="i-heroicons-check-circle" class="h-5 w-5 shrink-0 text-green-500" />
-                <span>{{ subscription.plan.features.maxBuildings }} building{{ subscription.plan.features.maxBuildings > 1 ? 's' : '' }}</span>
+            <div class="grid grid-cols-2 gap-4 text-sm border-t border-zinc-200 pt-4">
+              <div>
+                <p class="text-zinc-500">Started</p>
+                <p class="font-medium">{{ formatDate(lastPlan.billingCycleStart) }}</p>
               </div>
-              <div class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <UIcon name="i-heroicons-check-circle" class="h-5 w-5 shrink-0 text-green-500" />
-                <span>{{ subscription.plan.features.maxUnits }} units per building</span>
+              <div>
+                <p class="text-zinc-500">{{ subscription ? 'Ends' : 'Ended' }}</p>
+                <p class="font-medium">{{ formatDate(lastPlan.billingCycleEnd) }}</p>
               </div>
-              <div class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                <UIcon name="i-heroicons-check-circle" class="h-5 w-5 shrink-0 text-green-500" />
-                <span>{{ subscription.plan.features.maxManagers }} manager{{ subscription.plan.features.maxManagers > 1 ? 's' : '' }}</span>
-              </div>
-              <div v-if="subscription.plan.features.premiumFeatures?.length" class="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-700">
-                <p class="text-xs font-medium uppercase tracking-wider text-zinc-400 mb-2">Premium</p>
-                <div class="flex flex-wrap gap-x-3 gap-y-1">
-                  <span
-                    v-for="feature in subscription.plan.features.premiumFeatures"
-                    :key="feature"
-                    class="inline-flex items-center gap-1 text-xs text-zinc-600 dark:text-zinc-400"
-                  >
-                    <UIcon name="i-heroicons-star" class="h-3.5 w-3.5 text-amber-500" />
-                    {{ feature }}
-                  </span>
-                </div>
+              <div v-if="subscription">
+                <p class="text-zinc-500">Days remaining</p>
+                <p class="font-semibold" :class="isExpiringSoon ? 'text-amber-600' : ''">{{ daysLeft }}</p>
               </div>
             </div>
+
+            <UButton v-if="Number(lastPlan.totalAmount) > 0" color="primary" variant="outline"
+              icon="i-heroicons-arrow-down-tray" @click="downloadInvoice">
+              Download invoice
+            </UButton>
           </div>
         </UCard>
 
-        <!-- Usage stats -->
-        <UCard v-if="subscription.plan" variant="elevated">
+        <UCard v-if="lastPlan.plan" variant="elevated">
           <template #header>
-            <h2 class="text-base font-semibold text-zinc-800 dark:text-zinc-200">Usage</h2>
+            <h2 class="text-base font-semibold text-zinc-800">Usage</h2>
           </template>
-
-          <div class="space-y-4">
-            <div class="flex items-center gap-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 p-4">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/40">
-                <UIcon name="i-heroicons-building-office-2" class="h-5 w-5 text-primary-600 dark:text-primary-400" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs font-medium uppercase tracking-wider text-zinc-400">Buildings</p>
-                <p class="text-xl font-bold" :class="getUsageColor(usage.buildingsUsed, subscription.plan.features.maxBuildings)">
-                  {{ usage.buildingsUsed }} <span class="text-sm font-normal text-zinc-500">/ {{ subscription.plan.features.maxBuildings }}</span>
-                </p>
-              </div>
+          <div class="space-y-4 text-sm">
+            <div class="flex justify-between">
+              <span class="text-zinc-500">Buildings</span>
+              <span class="font-bold" :class="getUsageColor(usage.buildingsUsed, lastPlan.plan.features.maxBuildings)">
+                {{ usage.buildingsUsed }} / {{ lastPlan.plan.features.maxBuildings }}
+              </span>
             </div>
-            <div class="flex items-center gap-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 p-4">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/40">
-                <UIcon name="i-heroicons-home" class="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs font-medium uppercase tracking-wider text-zinc-400">Units (total)</p>
-                <p class="text-xl font-bold" :class="getUsageColor(usage.unitsUsed, maxUnitsAllowed)">
-                  {{ usage.unitsUsed }} <span class="text-sm font-normal text-zinc-500">/ {{ maxUnitsAllowed }}</span>
-                </p>
-              </div>
+            <div class="flex justify-between">
+              <span class="text-zinc-500">Active units (all buildings)</span>
+              <span class="font-bold">{{ usage.unitsUsed }}</span>
             </div>
-            <div class="flex items-center gap-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 p-4">
-              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
-                <UIcon name="i-heroicons-users" class="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <p class="text-xs font-medium uppercase tracking-wider text-zinc-400">Managers</p>
-                <p class="text-xl font-bold" :class="getUsageColor(usage.managersUsed, subscription.plan.features.maxManagers)">
-                  {{ usage.managersUsed }} <span class="text-sm font-normal text-zinc-500">/ {{ subscription.plan.features.maxManagers }}</span>
-                </p>
-              </div>
+            <p class="text-xs text-zinc-400 -mt-2">Limit: {{ lastPlan.plan.features.maxUnits }} per building</p>
+            <div class="flex justify-between">
+              <span class="text-zinc-500">Managers</span>
+              <span class="font-bold" :class="getUsageColor(usage.managersUsed, lastPlan.plan.features.maxManagers)">
+                {{ usage.managersUsed }} / {{ lastPlan.plan.features.maxManagers }}
+              </span>
             </div>
           </div>
         </UCard>
       </div>
 
-      <!-- Billing -->
       <UCard variant="elevated">
         <template #header>
-          <h2 class="text-base font-semibold text-zinc-800 dark:text-zinc-200">Billing</h2>
+          <h2 class="text-base font-semibold text-zinc-800">Plan requests</h2>
         </template>
-
-        <div class="space-y-1">
-          <div class="flex items-center justify-between py-3 rounded-lg px-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-            <span class="text-zinc-500">Billing cycle start</span>
-            <span class="font-medium text-zinc-900 dark:text-zinc-100">
-              {{ new Date(subscription.billingCycleStart).toLocaleDateString() }}
+        <UTable :data="requests" :columns="requestColumns" :loading="loading">
+          <template #createdAt-cell="{ row }">{{ formatDate(row.original.createdAt) }}</template>
+          <template #plan-cell="{ row }">{{ row.original.plan.name }}</template>
+          <template #amount-cell="{ row }">ETB {{ Number(row.original.amount).toLocaleString() }}</template>
+          <template #status-cell="{ row }">
+            <UBadge :color="statusColor[row.original.status]" variant="subtle" class="capitalize">
+              {{ row.original.status }}
+            </UBadge>
+          </template>
+          <template #details-cell="{ row }">
+            <span v-if="row.original.status === 'rejected' && row.original.rejectionReason" class="text-sm text-red-600">
+              {{ row.original.rejectionReason }}
             </span>
-          </div>
-          <div class="flex items-center justify-between py-3 rounded-lg px-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-            <span class="text-zinc-500">Billing cycle end</span>
-            <span class="font-medium text-zinc-900 dark:text-zinc-100">
-              {{ new Date(subscription.billingCycleEnd).toLocaleDateString() }}
+            <span v-else-if="row.original.paymentReference" class="text-xs text-zinc-500">
+              Ref {{ row.original.paymentReference }}
             </span>
-          </div>
-          <div class="flex items-center justify-between py-3 rounded-lg px-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-            <span class="text-zinc-500">Next billing date</span>
-            <span class="font-medium text-zinc-900 dark:text-zinc-100">
-              {{ new Date(subscription.nextBillingDate).toLocaleDateString() }}
-            </span>
-          </div>
-          <div class="flex items-center justify-between py-3 rounded-lg px-3 hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-            <span class="text-zinc-500">Days remaining</span>
-            <span class="font-semibold" :class="isExpiringSoon ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-zinc-100'">
-              {{ daysRemaining }} days
-            </span>
-          </div>
-
-          <div class="pt-4">
-            <UButton color="primary" variant="outline" block @click="downloadInvoice">
-              <UIcon name="i-heroicons-arrow-down-tray" class="mr-2 h-4 w-4" />
-              Download invoice
-            </UButton>
-          </div>
-        </div>
+          </template>
+          <template #empty>
+            <p class="text-center py-6 text-zinc-500">No plan requests yet</p>
+          </template>
+        </UTable>
       </UCard>
-    </div>
+    </template>
   </div>
 </template>

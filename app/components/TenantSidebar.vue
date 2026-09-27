@@ -11,6 +11,7 @@ const emit = defineEmits<{
 
 const navigation = [
   { label: 'Dashboard', icon: 'i-heroicons-home', to: '/tenant/dashboard' },
+  { label: 'Announcements', icon: 'i-heroicons-megaphone', to: '/tenant/announcements' },
   { label: 'Maintenance', icon: 'i-heroicons-wrench-screwdriver', to: '/tenant/maintenance' },
   { label: 'Payment History', icon: 'i-heroicons-banknotes', to: '/tenant/payments' },
   { label: 'Submit payment', icon: 'i-heroicons-document-plus', to: '/tenant/payment-requests' },

@@ -64,7 +64,11 @@ interface RentStatusItem {
 interface UpcomingPayment {
   id: string
   month: string
+  dueDate: string
   dueLabel: string
+  /** Rent before tax */
+  baseAmount: number
+  /** What the tenant pays (VAT − withholding applied) */
   amount: number
   status: 'unpaid' | 'overdue'
   unitNumber: string
@@ -73,7 +77,8 @@ interface UpcomingPayment {
 }
 
 interface DashboardStats {
-  paymentSummary: { paidAmount: number; unpaidAmount: number; overdueAmount: number }
+  /** Amounts include tax. unpaid = due now; upcoming = cycles not started yet */
+  paymentSummary: { paidAmount: number; unpaidAmount: number; overdueAmount: number; upcomingAmount: number }
   recentMonths: Array<{ month: string; label: string; due: number; paid: number }>
 }
 
@@ -136,13 +141,13 @@ async function fetchDashboardStats() {
 
 const paymentDonutData = computed(() => {
   const s = dashboardStats.value?.paymentSummary
-  if (!s || (s.paidAmount === 0 && s.unpaidAmount === 0 && s.overdueAmount === 0)) return null
+  if (!s || (s.paidAmount === 0 && s.unpaidAmount === 0 && s.overdueAmount === 0 && s.upcomingAmount === 0)) return null
   return {
-    labels: ['Paid', 'Unpaid', 'Overdue'],
+    labels: ['Paid', 'Due now', 'Overdue', 'Upcoming'],
     datasets: [
       {
-        data: [s.paidAmount, s.unpaidAmount, s.overdueAmount],
-        backgroundColor: ['#8b5cf6', '#a1a1aa', '#f43f5e'],
+        data: [s.paidAmount, s.unpaidAmount, s.overdueAmount, s.upcomingAmount],
+        backgroundColor: ['#8b5cf6', '#f59e0b', '#f43f5e', '#d4d4d8'],
         borderWidth: 0,
         hoverOffset: 6,
       },
@@ -378,7 +383,7 @@ onMounted(() => {
           class="flex items-center justify-between rounded-lg py-3 px-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
           <div>
             <p class="font-medium text-zinc-900 dark:text-zinc-100">
-              {{ item.dueLabel }}
+              Due {{ item.dueLabel }}
               <span class="font-normal text-zinc-500">
                 · Unit {{ item.unitNumber }}
                 <span v-if="item.unitFloor"> (Floor {{ item.unitFloor }})</span>
@@ -388,9 +393,12 @@ onMounted(() => {
               Overdue
             </UBadge>
           </div>
-          <p class="text-lg font-semibold text-primary-600 dark:text-primary-400">
-            ETB {{ item.amount.toLocaleString() }}
-          </p>
+          <div class="text-right">
+            <p class="text-lg font-semibold text-primary-600 dark:text-primary-400">
+              ETB {{ item.amount.toLocaleString() }}
+            </p>
+            <p v-if="item.amount !== item.baseAmount" class="text-xs text-zinc-500">incl. tax</p>
+          </div>
         </div>
       </div>
     </UCard>

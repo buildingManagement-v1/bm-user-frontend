@@ -8,7 +8,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     "/reset-password",
   ];
   const isPublicRoute = publicRoutes.includes(to.path);
-  const plansRoute = "/dashboard/plans";
 
   // Redirect authenticated users from auth pages to dashboard
   if (isAuthenticated.value && isPublicRoute) {
@@ -38,16 +37,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const userType = useCookie("user_type").value;
 
-  // Check subscription for authenticated users
-  if (isAuthenticated.value && userType === "user" && to.path !== plansRoute) {
+  // Load the owner's plan once; without one the app is read-only (a banner
+  // explains it) rather than locked, so data stays reachable
+  if (isAuthenticated.value && userType === "user") {
     const { hasSubscription, checkSubscription } = useSubscription();
-
     if (hasSubscription.value === null) {
       await checkSubscription();
-    }
-
-    if (hasSubscription.value === false) {
-      return navigateTo(plansRoute);
     }
   }
 });

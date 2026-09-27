@@ -18,7 +18,9 @@ export interface Lease {
   paymentCollectionDay?: number;
   applyWithholding: boolean;
   status: LeaseStatus;
-  terms?: any;
+  terminatedAt?: string | null;
+  terminationReason?: string | null;
+  terms?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   tenant: {
@@ -44,16 +46,37 @@ export interface CreateLeaseRequest {
   useDefaultPaymentDay: boolean;
   paymentCollectionDay?: number;
   applyWithholding: boolean;
-  status?: LeaseStatus;
-  terms?: any;
+  terms?: Record<string, unknown>;
 }
 
+/** Edits apply to rent cycles that haven't started or been paid */
 export interface UpdateLeaseRequest {
   startDate?: string;
   endDate?: string;
   rentAmount?: number;
   securityDeposit?: number;
   carsAllowed?: number;
-  status?: LeaseStatus;
-  terms?: any;
+  useDefaultPaymentDay?: boolean;
+  paymentCollectionDay?: number;
+  applyWithholding?: boolean;
+  terms?: Record<string, unknown>;
+}
+
+export interface TerminateLeaseRequest {
+  /** YYYY-MM-DD, defaults to today, cannot be in the future */
+  effectiveDate?: string;
+  reason?: string;
+}
+
+export interface TerminateLeaseResult {
+  message: string;
+  effectiveDate: string;
+  removedPeriods: number;
+  proratedPeriods: number;
+  prepaidPeriodsAfterEnd: number;
+  outstandingPeriods: number;
+  outstandingRent: number;
+  unitFreed: boolean;
+  parkingReleased: number;
+  tenantDeactivated: boolean;
 }

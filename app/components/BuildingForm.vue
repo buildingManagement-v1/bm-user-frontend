@@ -17,11 +17,6 @@ const emit = defineEmits<{
 const { api } = useApi()
 const toast = useToast()
 
-const paymentDayOptions = Array.from({ length: 30 }, (_, i) => ({
-  value: i + 1,
-  label: `${i + 1}${i === 0 ? 'st' : i === 1 ? 'nd' : i === 2 ? 'rd' : 'th'} of each month`,
-}))
-
 const state = reactive({
   name: props.building?.name || '',
   address: props.building?.address || '',
@@ -33,6 +28,7 @@ const state = reactive({
   withholdingRate: props.building?.withholdingRate ?? ('' as unknown as number),
   paymentCollectionDay: props.building?.paymentCollectionDay ?? undefined as number | undefined,
   totalParkingLots: props.building?.totalParkingLots ?? ('' as unknown as number),
+  paymentGraceDays: props.building?.paymentGraceDays ?? 5,
 })
 
 const selectedPaymentDay = computed({
@@ -119,6 +115,15 @@ async function onSubmit(event: FormSubmitEvent<BuildingSchema>) {
           <UInput v-model.number="state.totalParkingLots" type="number" min="0" placeholder="e.g. 20" :ui="{ root: 'w-full' }" />
         </UFormField>
       </div>
+      <div class="grid grid-cols-2 gap-4 mt-4">
+        <UFormField label="Grace Period (days)" name="paymentGraceDays"
+          help="Unpaid rent turns overdue this many days after the collection day.">
+          <UInput v-model.number="state.paymentGraceDays" type="number" min="0" max="28" :ui="{ root: 'w-full' }" />
+        </UFormField>
+      </div>
+      <p v-if="mode === 'edit'" class="text-xs text-gray-500 mt-3">
+        Payment day changes apply to new leases. Tax changes apply to payments recorded from now on.
+      </p>
     </div>
 
     <div class="flex gap-2 justify-end pt-4">

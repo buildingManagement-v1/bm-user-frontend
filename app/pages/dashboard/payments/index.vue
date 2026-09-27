@@ -152,7 +152,7 @@ watch(selectedBuildingId, () => {
 
       <div class="flex items-center gap-3">
         <BuildingSelector v-model="selectedBuildingId" />
-        <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true"
+        <UButton color="primary" icon="i-heroicons-plus" @click="() => { isCreateModalOpen = true }"
           :disabled="!selectedBuildingId">
           Record Payment
         </UButton>
@@ -241,7 +241,7 @@ watch(selectedBuildingId, () => {
             <p class="text-gray-500 mb-4">
               {{ selectedBuildingId ? 'Record your first payment' : 'Select a building to view payments' }}
             </p>
-            <UButton v-if="selectedBuildingId" color="primary" @click="isCreateModalOpen = true">
+            <UButton v-if="selectedBuildingId" color="primary" @click="() => { isCreateModalOpen = true }">
               Record Payment
             </UButton>
           </div>

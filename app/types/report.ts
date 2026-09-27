@@ -58,9 +58,14 @@ export interface OccupancyReport {
 }
 
 export interface RevenueReport {
+  /** Rent billed for cycles starting in the range (tax included) */
   expectedRent: number;
+  /** Rent payments received in the range */
   collectedRent: number;
   collectionRate: number;
+  /** Deposits, utilities and other payments received in the range */
+  otherIncome: number;
+  /** collectedRent + otherIncome */
   totalRevenue: number;
   dateRange: {
     startDate: string;

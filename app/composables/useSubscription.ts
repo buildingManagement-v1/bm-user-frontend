@@ -1,32 +1,43 @@
-import type { ApiResponse } from "~/types";
+import type { MySubscriptionResponse } from "~/types";
 
+/**
+ * Owner subscription state. Without an active plan the account is read-only:
+ * pages stay viewable and the API rejects changes.
+ */
 export const useSubscription = () => {
   const { api } = useApi();
 
-  const hasSubscription = useState<boolean | null>(
-    "hasSubscription",
-    () => null
+  const state = useState<MySubscriptionResponse | null>("mySubscription", () => null);
+  const hasSubscription = computed<boolean | null>(() =>
+    state.value === null ? null : !!state.value.data
   );
+  const isReadOnly = computed(() => state.value !== null && !state.value.data);
+  const daysLeft = computed(() => {
+    const end = state.value?.data?.billingCycleEnd;
+    if (!end) return 0;
+    return Math.ceil((new Date(end).getTime() - Date.now()) / 86_400_000);
+  });
 
   const checkSubscription = async () => {
     try {
-      const response = await api<ApiResponse<any>>(
+      state.value = await api<MySubscriptionResponse>(
         "/v1/app/subscriptions/my-subscription"
       );
-      hasSubscription.value = !!response.data;
-      return hasSubscription.value;
-    } catch (error) {
-      hasSubscription.value = false;
-      return false;
+    } catch {
+      state.value = null;
     }
+    return hasSubscription.value;
   };
 
   const resetSubscription = () => {
-    hasSubscription.value = null;
+    state.value = null;
   };
 
   return {
+    subscriptionState: state,
     hasSubscription,
+    isReadOnly,
+    daysLeft,
     checkSubscription,
     resetSubscription,
   };

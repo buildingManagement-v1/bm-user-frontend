@@ -115,7 +115,7 @@ onMounted(() => {
         <p class="text-gray-600 mt-1">Manage building managers and their access</p>
       </div>
 
-      <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true">
+      <UButton color="primary" icon="i-heroicons-plus" @click="() => { isCreateModalOpen = true }">
         Add Manager
       </UButton>
     </div>
@@ -176,7 +176,7 @@ onMounted(() => {
             <UIcon name="i-heroicons-users" class="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p class="text-gray-900 font-medium mb-2">No managers yet</p>
             <p class="text-gray-500 mb-4">Add managers to help you manage your buildings</p>
-            <UButton color="primary" @click="isCreateModalOpen = true">
+            <UButton color="primary" @click="() => { isCreateModalOpen = true }">
               Add Manager
             </UButton>
           </div>

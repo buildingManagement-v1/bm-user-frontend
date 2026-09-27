@@ -21,8 +21,9 @@ export interface Note {
 export interface MaintenanceRequest {
   id: string;
   buildingId: string;
-  tenantId: string;
-  unitId?: string;
+  /** null for common-area requests logged by staff */
+  tenantId: string | null;
+  unitId?: string | null;
   title: string;
   description: string;
   priority: MaintenanceRequestPriority;
@@ -35,7 +36,7 @@ export interface MaintenanceRequest {
     id: string;
     name: string;
     email: string;
-  };
+  } | null;
   unit?: {
     id: string;
     unitNumber: string;
@@ -48,6 +49,7 @@ export interface CreateMaintenanceRequestRequest {
   description: string;
   priority?: MaintenanceRequestPriority;
   tenantId?: string;
+  unitId?: string;
 }
 
 export interface UpdateMaintenanceRequestRequest {

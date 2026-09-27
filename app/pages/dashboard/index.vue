@@ -169,9 +169,11 @@ async function fetchRevenueByMonth() {
   }
 }
 
-function formatMonth(monthStr: string) {
-  const [year, month] = monthStr.split('-')
-  return new Date(Number(year), Number(month) - 1).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+/** Period keys are cycle start dates (YYYY-MM-DD); older data may be YYYY-MM */
+function formatMonth(periodKey: string) {
+  const [year, month, day] = periodKey.split('-').map(Number)
+  const date = new Date(Date.UTC(year!, (month ?? 1) - 1, day ?? 1))
+  return date.toLocaleDateString('en-GB', day ? { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' } : { month: 'long', year: 'numeric', timeZone: 'UTC' })
 }
 
 watch(selectedBuildingId, () => {
@@ -364,9 +366,12 @@ onMounted(() => {
           </template>
 
           <template #totalAmount-cell="{ row }">
-            <span class="font-semibold text-primary-600 dark:text-primary-400">
-              ETB {{ row.original.totalAmount.toLocaleString() }}
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-primary-600 dark:text-primary-400">
+                ETB {{ row.original.totalAmount.toLocaleString() }}
+              </span>
+              <UBadge v-if="row.original.overdue" color="error" variant="subtle" size="xs">Overdue</UBadge>
+            </div>
           </template>
 
           <template #empty>

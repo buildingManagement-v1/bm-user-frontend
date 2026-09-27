@@ -117,11 +117,13 @@ export interface Invoice {
   }>;
 }
 
+/** One lease's rent periods: current leases plus ended ones with rent still owed */
 export interface PaymentCalendar {
   leaseId: string;
   unitId: string;
   unitNumber: string;
   unitFloor?: number;
+  status: "active" | "expired" | "terminated";
   startDate: string;
   endDate: string;
   rentAmount: number;

@@ -15,9 +15,12 @@ export interface UpcomingPayment {
     id: string;
     unitNumber: string;
   };
-  /** Months (YYYY-MM) grouped for this tenant+unit */
+  /** Period keys (cycle start dates, YYYY-MM-DD) grouped for this tenant+unit */
   months: string[];
+  /** Total the tenant owes for these periods, tax included */
   totalAmount: number;
+  /** At least one of the periods is overdue */
+  overdue: boolean;
 }
 
 export interface RevenueByMonth {

@@ -13,6 +13,9 @@ export enum UnitStatus {
   INACTIVE = "inactive",
 }
 
+/** Statuses an owner can set; "occupied" is managed by leases */
+export type SettableUnitStatus = UnitStatus.VACANT | UnitStatus.INACTIVE;
+
 export interface Unit {
   id: string;
   buildingId: string;
@@ -32,7 +35,7 @@ export interface CreateUnitRequest {
   size?: number;
   type?: UnitType;
   rentPrice: number;
-  status?: UnitStatus;
+  status?: SettableUnitStatus;
 }
 
 export interface UpdateUnitRequest {
@@ -41,5 +44,5 @@ export interface UpdateUnitRequest {
   size?: number;
   type?: UnitType;
   rentPrice?: number;
-  status?: UnitStatus;
+  status?: SettableUnitStatus;
 }
