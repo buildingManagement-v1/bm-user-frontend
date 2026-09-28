@@ -179,7 +179,7 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
                 class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
               <span class="text-sm text-gray-600 group-hover:text-gray-900 transition">Remember me</span>
             </label>
-            <NuxtLink to="/forgot-password"
+            <NuxtLink :to="`/forgot-password?type=${selectedUserType?.value ?? 'user'}`"
               class="text-sm text-primary-600 hover:text-primary-700 font-medium transition">
               Forgot password?
             </NuxtLink>
