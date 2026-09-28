@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { forgotPasswordSchema, type ForgotPasswordSchema } from '~/schemas/auth'
+import { toApiError } from '~/composables/useApi'
 
 definePageMeta({
   layout: false,
@@ -8,7 +9,10 @@ definePageMeta({
 
 const config = useRuntimeConfig()
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
+
+const accountType = ref<UserType>(parseAccountType(route.query.type))
 
 const state = reactive({
   email: '',
@@ -19,7 +23,7 @@ const loading = ref(false)
 async function onSubmit(event: FormSubmitEvent<ForgotPasswordSchema>) {
   loading.value = true
   try {
-    await $fetch(`${config.public.apiUrl}/v1/app/auth/forgot-password`, {
+    await $fetch(`${config.public.apiUrl}${passwordResetEndpoints[accountType.value].request}`, {
       method: 'POST',
       body: { email: event.data.email },
     })
@@ -30,11 +34,11 @@ async function onSubmit(event: FormSubmitEvent<ForgotPasswordSchema>) {
       color: 'success'
     })
 
-    router.push(`/reset-password?email=${encodeURIComponent(event.data.email)}`)
-  } catch (error: any) {
+    router.push(`/reset-password?email=${encodeURIComponent(event.data.email)}&type=${accountType.value}`)
+  } catch (error) {
     toast.add({
       title: 'Failed to send OTP',
-      description: error.message,
+      description: toApiError(error, 'Request failed').message,
       color: 'error'
     })
   } finally {
@@ -54,6 +58,11 @@ async function onSubmit(event: FormSubmitEvent<ForgotPasswordSchema>) {
       </template>
 
       <UForm :schema="forgotPasswordSchema" :state="state" @submit="onSubmit" class="space-y-4">
+        <UFormField label="Account type" required>
+          <USelectMenu v-model="accountType" :items="accountTypeOptions" value-key="value" :search-input="false"
+            size="lg" class="w-full" />
+        </UFormField>
+
         <UFormField label="Email" name="email" required>
           <UInput v-model="state.email" type="email" placeholder="your@email.com" icon="i-heroicons-envelope" size="lg"
             :ui="{ root: 'w-full' }" />

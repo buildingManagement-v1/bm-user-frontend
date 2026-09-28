@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { resetPasswordSchema, type ResetPasswordSchema } from '~/schemas/auth'
+import { toApiError } from '~/composables/useApi'
 
 definePageMeta({
   layout: false,
@@ -10,6 +11,8 @@ const config = useRuntimeConfig()
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+
+const accountType = ref<UserType>(parseAccountType(route.query.type))
 
 const state = reactive({
   email: (route.query.email as string) || '',
@@ -22,7 +25,7 @@ const loading = ref(false)
 async function onSubmit(event: FormSubmitEvent<ResetPasswordSchema>) {
   loading.value = true
   try {
-    await $fetch(`${config.public.apiUrl}/v1/app/auth/reset-password`, {
+    await $fetch(`${config.public.apiUrl}${passwordResetEndpoints[accountType.value].reset}`, {
       method: 'POST',
       body: {
         email: event.data.email,
@@ -38,10 +41,10 @@ async function onSubmit(event: FormSubmitEvent<ResetPasswordSchema>) {
     })
 
     router.push('/login')
-  } catch (error: any) {
+  } catch (error) {
     toast.add({
       title: 'Reset failed',
-      description: error.message,
+      description: toApiError(error, 'Reset failed').message,
       color: 'error'
     })
   } finally {
@@ -61,6 +64,11 @@ async function onSubmit(event: FormSubmitEvent<ResetPasswordSchema>) {
       </template>
 
       <UForm :schema="resetPasswordSchema" :state="state" @submit="onSubmit" class="space-y-4">
+        <UFormField label="Account type" required>
+          <USelectMenu v-model="accountType" :items="accountTypeOptions" value-key="value" :search-input="false"
+            size="lg" class="w-full" />
+        </UFormField>
+
         <UFormField label="Email" name="email" required>
           <UInput v-model="state.email" type="email" placeholder="your@email.com" icon="i-heroicons-envelope" size="lg"
             :ui="{ root: 'w-full' }" />
