@@ -3,7 +3,8 @@ export interface DashboardStats {
   totalUnits: number;
   occupiedUnits: number;
   occupancyRate: number;
-  revenueThisMonth: number;
+  /** null when the viewer has no payment/reports role in this building */
+  revenueThisMonth: number | null;
   pendingMaintenanceRequests: number;
 }
 

@@ -14,3 +14,13 @@
   --color-secondary-900: #4c1d95;
   --color-secondary-950: #2e1065;
 }
+
+/* Sidebar navigation: slim scrollbar that only shows while hovered */
+.nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+.nav-scroll:hover {
+  scrollbar-color: var(--color-gray-300) transparent;
+}

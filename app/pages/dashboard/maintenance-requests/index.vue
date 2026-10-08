@@ -2,12 +2,16 @@
 import type { TableColumn } from '@nuxt/ui'
 import type { MaintenanceRequest } from '~/types/maintenance-request'
 import type { ApiResponse, PaginatedResponse, PageInfo } from '~/types'
+import { ManagerRole } from '~/types/manager'
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
 
 const requests = ref<MaintenanceRequest[]>([])
 const { selectedBuildingId } = useSelectedBuilding()
+const { can } = usePermissions()
+// Operations managers can view and log requests; changes need maintenance
+const canManage = computed(() => can(ManagerRole.MAINTENANCE_MANAGER))
 const loading = ref(false)
 const pageInfo = ref<PageInfo | null>(null)
 const limit = ref(20)
@@ -242,13 +246,15 @@ watch(selectedBuildingId, () => {
             <UButton size="xs" color="neutral" variant="ghost" @click="openViewModal(row.original)">
               View
             </UButton>
-            <UButton size="xs" color="primary" variant="ghost" @click="openUpdateModal(row.original)">
-              Update
-            </UButton>
-            <UButton size="xs" color="error" variant="ghost" @click="deleteRequest(row.original.id)"
-              :loading="deletingId === row.original.id" :disabled="deletingId !== null">
-              Delete
-            </UButton>
+            <template v-if="canManage">
+              <UButton size="xs" color="primary" variant="ghost" @click="openUpdateModal(row.original)">
+                Update
+              </UButton>
+              <UButton size="xs" color="error" variant="ghost" @click="deleteRequest(row.original.id)"
+                :loading="deletingId === row.original.id" :disabled="deletingId !== null">
+                Delete
+              </UButton>
+            </template>
           </div>
         </template>
 

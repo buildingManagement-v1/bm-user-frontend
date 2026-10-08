@@ -13,12 +13,17 @@ import type { TableColumn } from '@nuxt/ui'
 import type { DashboardStats, UpcomingPayment, RevenueByMonth } from '~/types/dashboard'
 import type { Building } from '~/types/building'
 import type { ApiResponse } from '~/types'
+import { ManagerRole } from '~/types/manager'
 
 ChartJS.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 const { api, buildingApi } = useApi()
 const toast = useToast()
 const { selectedBuildingId } = useSelectedBuilding()
+const { can } = usePermissions()
+
+// Rent and revenue need a payment or reports role (owners always)
+const canSeeFinances = computed(() => can(ManagerRole.PAYMENT_MANAGER, ManagerRole.REPORTS_VIEWER))
 
 const stats = ref<DashboardStats | null>(null)
 const upcomingPayments = ref<UpcomingPayment[]>([])
@@ -179,8 +184,10 @@ function formatMonth(periodKey: string) {
 watch(selectedBuildingId, () => {
   if (selectedBuildingId.value) {
     fetchStats()
-    fetchUpcomingPayments()
-    fetchRevenueByMonth()
+    if (canSeeFinances.value) {
+      fetchUpcomingPayments()
+      fetchRevenueByMonth()
+    }
   }
 }, { immediate: true })
 
@@ -267,7 +274,7 @@ onMounted(() => {
         </div>
       </UCard>
 
-      <UCard variant="elevated" class="overflow-hidden">
+      <UCard v-if="stats.revenueThisMonth !== null" variant="elevated" class="overflow-hidden">
         <div class="flex items-start justify-between">
           <div>
             <p class="text-xs font-medium uppercase tracking-wider text-zinc-400">Revenue This Month</p>
@@ -318,7 +325,7 @@ onMounted(() => {
         </div>
       </UCard>
 
-      <UCard variant="elevated" class="lg:col-span-2 overflow-hidden">
+      <UCard v-if="canSeeFinances" variant="elevated" class="lg:col-span-2 overflow-hidden">
         <template #header>
           <h2 class="text-base font-semibold text-zinc-800 dark:text-zinc-200">Revenue by month</h2>
         </template>
@@ -340,10 +347,10 @@ onMounted(() => {
     </div>
 
     <!-- Upcoming payments -->
-    <UCard v-if="selectedBuildingId" variant="elevated" class="overflow-hidden">
+    <UCard v-if="selectedBuildingId && canSeeFinances" variant="elevated" class="overflow-hidden">
       <template #header>
         <h2 class="text-base font-semibold text-zinc-800 dark:text-zinc-200">
-          Upcoming payments (next 2 weeks)
+          Rent overdue &amp; due in the next 2 weeks
         </h2>
       </template>
 
@@ -378,7 +385,7 @@ onMounted(() => {
             <div class="py-12 text-center">
               <UIcon name="i-heroicons-check-circle" class="mx-auto mb-4 h-12 w-12 text-green-500" />
               <p class="mb-2 font-medium text-zinc-900 dark:text-zinc-100">All caught up!</p>
-              <p class="text-zinc-500">No upcoming payments in the next 2 weeks</p>
+              <p class="text-zinc-500">Nothing overdue and no rent due in the next 2 weeks</p>
             </div>
           </template>
         </UTable>

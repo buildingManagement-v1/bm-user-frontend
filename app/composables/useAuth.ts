@@ -28,29 +28,38 @@ const endpoints: Record<UserType, { login: string; refresh: string; changePasswo
   },
 };
 
+/** Matches the backend's 30-day refresh token for remembered sessions. */
+const REMEMBERED_MAX_AGE = 60 * 60 * 24 * 30;
+
+/**
+ * "Remember me" keeps the session for 30 days; without it every auth cookie
+ * is a session cookie that ends when the browser closes (and the backend
+ * issues a 24h refresh token).
+ */
+const authCookieOptions = (remember: boolean) => ({
+  maxAge: remember ? REMEMBERED_MAX_AGE : undefined,
+});
+
 export const useAuth = () => {
   const config = useRuntimeConfig();
   const router = useRouter();
 
-  const userCookie = useCookie<User | Manager | TenantAuthData | null>("user", {
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  // Sessions from before the flag existed count as remembered
+  const remembered = useCookie<boolean | null>("remember_me").value !== false;
+  const cookieOptions = authCookieOptions(remembered);
+
+  const userCookie = useCookie<User | Manager | TenantAuthData | null>(
+    "user",
+    cookieOptions
+  );
 
   const user = useState<User | Manager | TenantAuthData | null>(
     "user",
     () => userCookie.value
   );
-  const token = useCookie("token", {
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  const refreshToken = useCookie("refresh_token", {
-    maxAge: 60 * 60 * 24 * 30,
-  });
-
-  const userType = useCookie<UserType | null>("user_type", {
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  const token = useCookie<string | null>("token", cookieOptions);
+  const refreshToken = useCookie<string | null>("refresh_token", cookieOptions);
+  const userType = useCookie<UserType | null>("user_type", cookieOptions);
 
   const setUser = (value: User | Manager | TenantAuthData | null) => {
     user.value = value;
@@ -83,9 +92,6 @@ export const useAuth = () => {
         }
       );
 
-      token.value = response.data.accessToken;
-      refreshToken.value = response.data.refreshToken;
-
       const mustResetPassword = response.data.mustResetPassword || false;
       let userData: User | Manager | TenantAuthData;
       if (type === "user") {
@@ -96,8 +102,18 @@ export const useAuth = () => {
         userData = { ...response.data.tenant!, mustResetPassword };
       }
 
-      setUser(userData);
-      userType.value = type;
+      // This instance's cookies were opened with the previous session's
+      // lifetime, so write the new session through ones that use the
+      // chosen lifetime; other instances pick the values up automatically
+      const options = authCookieOptions(rememberMe);
+      useCookie<boolean>("remember_me", options).value = rememberMe;
+      useCookie<string>("token", options).value = response.data.accessToken;
+      useCookie<string>("refresh_token", options).value =
+        response.data.refreshToken;
+      useCookie<User | Manager | TenantAuthData>("user", options).value =
+        userData;
+      useCookie<UserType>("user_type", options).value = type;
+      user.value = userData;
 
       return response;
     } catch (error) {
@@ -130,6 +146,7 @@ export const useAuth = () => {
     refreshToken.value = null;
     setUser(null);
     userType.value = null;
+    useCookie<boolean | null>("remember_me").value = null;
     const selectedBuildingId = useCookie<string>("selectedBuildingId");
     selectedBuildingId.value = "";
     const { resetSubscription } = useSubscription();

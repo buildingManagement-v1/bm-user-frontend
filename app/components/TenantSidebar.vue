@@ -30,10 +30,10 @@ function isActive(itemTo: string) {
 
 <template>
   <aside :class="[
-    'fixed inset-y-0 left-0 bg-white border-r border-gray-200 transition-all duration-300 z-40',
+    'fixed inset-y-0 left-0 flex flex-col bg-white border-r border-gray-200 transition-all duration-300 z-40',
     isOpen ? 'w-64' : 'w-20'
   ]">
-    <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+    <div class="h-16 shrink-0 flex items-center justify-between px-4 border-b border-gray-200">
       <div v-if="isOpen" class="flex items-center gap-2">
         <UIcon name="i-heroicons-building-office-2" class="w-8 h-8 text-primary-600" />
         <span class="text-xl font-bold text-gray-900">Tenant Portal</span>
@@ -41,7 +41,7 @@ function isActive(itemTo: string) {
       <UIcon v-else name="i-heroicons-building-office-2" class="w-8 h-8 text-primary-600 mx-auto" />
     </div>
 
-    <nav class="p-4 space-y-2">
+    <nav class="nav-scroll flex-1 min-h-0 overflow-y-auto p-4 space-y-2">
       <NuxtLink v-for="item in navigation" :key="item.to" :to="item.to" :class="[
         'flex items-center gap-3 px-4 py-3 rounded-lg whitespace-nowrap transition-colors',
         isActive(item.to)
@@ -53,7 +53,7 @@ function isActive(itemTo: string) {
       </NuxtLink>
     </nav>
 
-    <div class="absolute bottom-4 left-0 right-0 px-4">
+    <div class="shrink-0 p-4 border-t border-gray-200">
       <UButton color="neutral" variant="ghost" block
         :icon="isOpen ? 'i-heroicons-chevron-left' : 'i-heroicons-chevron-right'" @click="emit('toggle')">
         <span v-if="isOpen">Collapse</span>
